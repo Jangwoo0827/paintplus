@@ -1,0 +1,86 @@
+{
+  "name": "paintplus",
+  "productName": "PaintPlus",
+  "version": "1.0.0",
+  "description": "그림판+ - 기본 그림판보다 훨씬 강력한 데스크톱 그림 프로그램",
+  "main": "src/main/main.js",
+  "author": "Jangwoo",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "icon": "electron scripts/make-icon.js",
+    "smoke": "electron test/smoke.js",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.jangwoo.paintplus",
+    "productName": "PaintPlus",
+    "executableName": "PaintPlus",
+    "copyright": "Copyright (c) 2026 Jangwoo",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "electronLanguages": [
+      "ko",
+      "en-US"
+    ],
+    "publish": null,
+    "fileAssociations": [
+      {
+        "ext": "paintplus",
+        "name": "그림판+ 프로젝트",
+        "description": "그림판+ 프로젝트 파일",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "그림판+",
+      "uninstallDisplayName": "그림판+",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "language": "1042",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "PaintPlus-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "PaintPlus-Portable-${version}.exe"
+    }
+  }
+}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>그림판+</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="menubar"></div>
+    <div id="optionsbar"></div>
+    <div id="main">
+      <div id="toolbox"></div>
+      <div id="workspace">
+        <div id="ruler-corner"></div>
+        <canvas id="ruler-h"></canvas>
+        <canvas id="ruler-v"></canvas>
+        <div id="stage">
+          <canvas id="view"></canvas>
+          <canvas id="overlay"></canvas>
+          <div id="text-layer"></div>
+        </div>
+      </div>
+      <div id="sidebar">
+        <section class="panel" id="panel-color"><header>색상</header><div class="body"></div></section>
+        <section class="panel grow" id="panel-layers"><header>레이어</header><div class="body"></div></section>
+        <section class="panel" id="panel-history"><header>히스토리</header><div class="body"></div></section>
+      </div>
+    </div>
+    <div id="statusbar">
+      <span id="st-tool" class="st-item"></span>
+      <span id="st-pos" class="st-item" title="커서 좌표">–</span>
+      <span id="st-sel" class="st-item" title="선택 영역 크기"></span>
+      <span class="st-spacer"></span>
+      <span id="st-size" class="st-item" title="캔버스 크기"></span>
+      <button id="st-snap" class="st-btn" title="격자 맞춤">격자 맞춤</button>
+      <button id="st-grid" class="st-btn" title="격자 표시">격자</button>
+      <button id="st-fit" class="st-btn" title="화면에 맞춤 (Ctrl+0)">맞춤</button>
+      <button id="st-100" class="st-btn" title="100% 보기 (Ctrl+1)">100%</button>
+      <input id="st-zoom" type="range" min="0" max="100" step="1" title="확대/축소">
+      <span id="st-zoomval" class="st-item st-zoomval">100%</span>
+    </div>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toast"></div>
+
+  <script src="js/util.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/commands.js"></script>
+  <script src="js/document.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/selection.js"></script>
+  <script src="js/preview.js"></script>
+  <script src="js/viewport.js"></script>
+  <script src="js/layers.js"></script>
+  <script src="js/brush-engine.js"></script>
+  <script src="js/tools/brush.js"></script>
+  <script src="js/tools/basic.js"></script>
+  <script src="js/tools/fill.js"></script>
+  <script src="js/tools/shapes.js"></script>
+  <script src="js/tools/text.js"></script>
+  <script src="js/ui/dialogs.js"></script>
+  <script src="js/files.js"></script>
+  <script src="js/clipboard.js"></script>
+  <script src="js/project.js"></script>
+  <script src="js/imageops.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/ui/color-ui.js"></script>
+  <script src="js/ui/toolbox.js"></script>
+  <script src="js/ui/panels.js"></script>
+  <script src="js/ui/statusbar.js"></script>
+  <script src="js/ui/help.js"></script>
+  <script src="js/ui/menu.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
