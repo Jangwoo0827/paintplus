@@ -8,6 +8,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// 기본은 오프스크린(사용자 화면에 창이 뜨지 않음). 눈으로 보려면 PP_SHOW=1
+if (!process.env.PP_SHOW) process.env.PP_HEADLESS = '1';
 const scenarioName = process.argv.find((a, i) => i >= 2 && /^[a-z0-9_-]+$/i.test(a)) || 'stage1';
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'paintplus-smoke-'));
 app.setPath('userData', userData);
@@ -28,7 +30,7 @@ app.whenReady().then(async () => {
   const wc = win.webContents;
   wc.on('console-message', (e) => {
     const lvl = e.level !== undefined ? e.level : 0;
-    if (lvl === 'error' || lvl === 3) consoleErrors.push(e.message || '');
+    if (lvl === 'error' || lvl === 3) consoleErrors.push((e.message || '') + (e.sourceId ? ` @${String(e.sourceId).split('/').pop()}:${e.lineNumber}` : ''));
   });
   win.setSize(1500, 940);
   win.center();
@@ -69,6 +71,16 @@ app.whenReady().then(async () => {
       await wait(15);
       t.mouse('mouseUp', last[0], last[1], { button, modifiers });
       await t.frame();
+    },
+    async keyDown(k) { wc.sendInputEvent({ type: 'keyDown', keyCode: k }); await wait(50); },
+    async keyUp(k) { wc.sendInputEvent({ type: 'keyUp', keyCode: k }); await wait(50); },
+    async wheel(x, y, deltaY) { wc.sendInputEvent({ type: 'mouseWheel', x, y, deltaX: 0, deltaY: -deltaY, canScroll: true }); await wait(100); },
+    async setSize(w, h) { win.setMinimumSize(300, 300); win.setSize(w, h); await wait(300); },
+    async dblclick(dx, dy) {
+      const [cx, cy] = await t.docToClient(dx, dy);
+      t.mouse('mouseDown', cx, cy, { button: 'left', clickCount: 2, modifiers: ['leftButtonDown'] });
+      t.mouse('mouseUp', cx, cy, { button: 'left', clickCount: 2 });
+      await wait(100);
     },
     async click(x, y, opt = {}) {
       await t.drag([[x, y], [x, y]], opt);

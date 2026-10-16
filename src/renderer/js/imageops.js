@@ -6,7 +6,7 @@
   /** 모든 레이어를 새 크기의 새 캔버스로 바꿔 그린다. draw(ctx, oldCanvas, layerIndex) */
   function transformAll(name, nw, nh, draw) {
     PP.sel.finish();
-    PP.sel.poly = null;
+    PP.sel.deselect();
     PP.history.structural(name, () => {
       doc.layers.forEach((l, i) => {
         const c = PP.makeCanvas(nw, nh);

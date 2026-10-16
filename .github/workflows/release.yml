@@ -1,0 +1,61 @@
+name: Release
+
+# v1.2.3 같은 태그를 푸시하면 Windows(설치 파일 + portable + 자동 업데이트 메타데이터)와
+# Android APK 를 빌드해 GitHub Release 에 올린다.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      # 코드 서명 인증서가 있으면 CSC_LINK / CSC_KEY_PASSWORD 시크릿으로 자동 서명된다 (없으면 서명 없이 빌드)
+      - run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+  android:
+    runs-on: ubuntu-latest
+    env:
+      KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npx cap sync android
+      - name: 서명 키 준비 (시크릿이 있을 때만)
+        if: ${{ env.KS_B64 != '' }}
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KS_B64" | base64 -d > android/paintplus.jks
+          printf 'storeFile=paintplus.jks\nstorePassword=%s\nkeyAlias=paintplus\nkeyPassword=%s\n' "$KS_PASS" "$KS_PASS" > android/keystore.properties
+      - run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --console=plain
+      - name: APK 이름 정리
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          cp "$APK" "PaintPlus-$VER.apk"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: PaintPlus-*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -55,6 +55,7 @@
 
   // ---------- 폼 도우미 ----------
   ui.row = (label, ...ctrls) => PP.el('div', { class: 'frow' }, PP.el('label', { text: label }), ...ctrls);
+  ui.text = (value) => PP.el('input', { type: 'text', value, spellcheck: 'false' });
   ui.num = (value, min, max, step = 1) => PP.el('input', { type: 'number', value, min, max, step });
   ui.select = (items, value) => {
     const s = PP.el('select');

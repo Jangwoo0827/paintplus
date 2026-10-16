@@ -2,3 +2,11 @@ node_modules/
 dist/
 *.log
 .claude/
+android/keystore.properties
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/app/src/main/assets/public/
+*.jks

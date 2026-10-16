@@ -114,6 +114,7 @@ module.exports = async function (t) {
   t.check(t.near(await t.px(40, 5 + 50 * 3), [0, 0, 0], 60), '다시 실행한 획 복원');
 
   // 히스토리 패널
+  await wait(150);
   const rows = await js("document.querySelectorAll('#panel-history .hist-row').length");
   t.check(rows === 131, '히스토리 패널 행 수 = 단계+1 (' + rows + ')');
   await js("document.querySelectorAll('#panel-history .hist-row')[50].click()");

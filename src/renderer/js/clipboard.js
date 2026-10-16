@@ -6,8 +6,13 @@
     internal: null, // 마지막으로 복사한 캔버스 (시스템 클립보드를 못 읽을 때 대비)
 
     async writeSystem(canvas) {
-      if (!api) return;
-      try { await api.writeClipboardImage(canvas.toDataURL('image/png')); } catch (e) { console.error(e); }
+      try {
+        if (api) await api.writeClipboardImage(canvas.toDataURL('image/png'));
+        else if (navigator.clipboard && window.ClipboardItem) {
+          const blob = await PP.canvasToBlob(canvas, 'image/png');
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        }
+      } catch (e) { console.error(e); }
     },
 
     loadDataUrl(url) {
@@ -47,9 +52,7 @@
       C.internal = r.canvas;
       await C.writeSystem(r.canvas);
       PP.sel.clearContent();
-      PP.sel.poly = null;
-      PP.emit('selection');
-      PP.renderOverlay();
+      PP.sel.deselect();
       PP.toast('잘라냈습니다');
     },
 
@@ -64,6 +67,14 @@
           const url = await api.readClipboardImage();
           if (url) return await C.loadDataUrl(url);
         } catch (e) { console.error(e); }
+      }
+      if (!api && navigator.clipboard && navigator.clipboard.read) {
+        try {
+          for (const item of await navigator.clipboard.read()) {
+            const type = item.types.find((t) => t.startsWith('image/'));
+            if (type) return await C.loadDataUrl(URL.createObjectURL(await item.getType(type)));
+          }
+        } catch (e) { /* 권한 없음 → 내부 클립보드 */ }
       }
       return C.internal;
     },
@@ -115,5 +126,7 @@
   D('edit.delete', '삭제', 'Delete / Backspace', () => C.delete(), { enabled: hasSel });
   D('edit.selectall', '모두 선택', 'Ctrl+A', () => { PP.selectTool(PP.state.tool === 'sellasso' ? 'sellasso' : 'selrect'); PP.sel.selectAll(); });
   D('edit.deselect', '선택 해제', 'Ctrl+D', () => PP.sel.deselect(), { enabled: hasSel });
+  D('edit.invertsel', '선택 반전', 'Ctrl+Shift+I', () => PP.sel.invert());
+  D('edit.transform', '자유 변형 (레이어 내용)', 'Ctrl+T', () => PP.freeTransform());
   D('clip.copyAll', '전체 이미지를 클립보드로 복사', 'Ctrl+Shift+C', () => C.copyAll());
 })(window.PP);

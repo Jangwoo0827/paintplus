@@ -40,6 +40,30 @@
     return { mask, x0, y0, x1, y1 };
   }
 
+  /** 연결 여부와 상관없이 문서 전체에서 같은 색(허용 오차 이내)인 곳 */
+  function colorMask(img, sx, sy, tol) {
+    const w = img.width, h = img.height, d = img.data;
+    const mask = new Uint8Array(w * h);
+    const si = (sy * w + sx) * 4;
+    const tr = d[si], tg = d[si + 1], tb = d[si + 2], ta = d[si + 3];
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const p = (y * w + x) * 4;
+        if (Math.abs(d[p] - tr) <= tol && Math.abs(d[p + 1] - tg) <= tol && Math.abs(d[p + 2] - tb) <= tol && Math.abs(d[p + 3] - ta) <= tol) {
+          mask[y * w + x] = 1;
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          y1 = y;
+        }
+      }
+    }
+    return { mask, x0, y0, x1, y1 };
+  }
+  PP.floodMask = floodMask;
+  PP.colorMask = colorMask;
+
   function dilate(mask, w, h, b, n) {
     for (let k = 0; k < n; k++) {
       const add = [];

@@ -27,12 +27,10 @@ module.exports = async function (t) {
   const [ox0] = await js('[PP.vp.ox, PP.vp.oy]');
   await js('PP.vp.setZoom(2)');
   const before = await js('[PP.vp.ox, PP.vp.oy]');
-  t.wc.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
-  await wait(50);
+  await t.keyDown('Space');
   t.check(await js('PP.vp.space'), 'Space 누르면 손바닥 모드');
   await t.drag([[400, 300], [300, 250]], { step: 3 });
-  t.wc.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
-  await wait(50);
+  await t.keyUp('Space');
   const after = await js('[PP.vp.ox, PP.vp.oy]');
   t.check(after[0] < before[0] - 20 && after[1] < before[1] - 10, `Space+드래그로 화면 이동 (${before.map(Math.round)} → ${after.map(Math.round)})`);
   await js('PP.vp.fit(8)');
@@ -41,6 +39,7 @@ module.exports = async function (t) {
   await fresh();
   await js("PP.setGrid({show:true,size:50,snap:true}); PP.selectTool('line'); PP.opts('line').lineWidth=4; PP.setColor('fg','#dc2626')");
   await t.drag([[103, 98], [297, 203]]);
+  await t.key('Return');
   // 격자 맞춤: (100,100)→(300,200)
   t.check(t.near(await t.px(200, 150), red, 60), '격자 맞춤: 직선이 격자점(100,100)-(300,200)에 정렬');
   await t.shot('grid');

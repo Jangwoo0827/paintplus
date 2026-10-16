@@ -12,11 +12,13 @@
     colors: {},
   });
 
-  let stage, view, overlay, comp, tmp, vctx, octx, cctx, tctx, rulerH, rulerV, corner;
+  let stage, view, overlay, comp, tmp, tmp2, vctx, octx, cctx, tctx, t2ctx, rulerH, rulerV, corner;
   let checkPattern = null;
   let panState = null;
   let activeTool = null;
   let lastMove = null;
+  const touches = new Map(); // 활성 터치 포인터(두 손가락 이동/확대용)
+  let pinch = null;
   let antsOffset = 0;
 
   V.init = function () {
@@ -28,10 +30,13 @@
     corner = PP.$('#ruler-corner');
     comp = document.createElement('canvas');
     tmp = document.createElement('canvas');
+    tmp2 = document.createElement('canvas');
+    V.coarse = matchMedia('(pointer: coarse)').matches;
     vctx = view.getContext('2d');
     octx = overlay.getContext('2d');
     cctx = comp.getContext('2d');
     tctx = tmp.getContext('2d');
+    t2ctx = tmp2.getContext('2d');
     V.stage = stage;
 
     new ResizeObserver(V.resize).observe(stage);
@@ -83,16 +88,14 @@
     V.w = Math.max(1, Math.floor(r.width));
     V.h = Math.max(1, Math.floor(r.height));
     V.dpr = dpr;
-    for (const c of [view, overlay, comp, tmp]) {
+    for (const c of [view, overlay, comp, tmp, tmp2]) {
       c.width = Math.round(V.w * dpr);
       c.height = Math.round(V.h * dpr);
     }
     view.style.width = overlay.style.width = V.w + 'px';
     view.style.height = overlay.style.height = V.h + 'px';
     rulerH.width = Math.round(V.w * dpr); rulerH.height = Math.round(RULER * dpr);
-    rulerH.style.width = V.w + 'px'; rulerH.style.height = RULER + 'px';
     rulerV.width = Math.round(RULER * dpr); rulerV.height = Math.round(V.h * dpr);
-    rulerV.style.width = RULER + 'px'; rulerV.style.height = V.h + 'px';
     clampPan();
     PP.render();
   };
@@ -182,7 +185,7 @@
     }
     const pen = e.pointerType === 'pen';
     return {
-      x, y, sx, sy,
+      x, y, sx, sy, touch: e.pointerType === 'touch',
       pressure: pen ? e.pressure : 1,
       pen,
       shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey, alt: e.altKey,
@@ -198,12 +201,40 @@
     return t;
   }
 
+  // ---------- 두 손가락: 이동 + 확대/축소 ----------
+  function pinchPoints() {
+    const r = overlay.getBoundingClientRect();
+    const [a, b] = [...touches.values()];
+    return { cx: (a.x + b.x) / 2 - r.left, cy: (a.y + b.y) / 2 - r.top, d: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)) };
+  }
+  function startPinch() {
+    V.cancelGesture();
+    const p = pinchPoints();
+    pinch = { d0: p.d, cx0: p.cx, cy0: p.cy, z0: V.zoom, ox0: V.ox, oy0: V.oy };
+  }
+  function updatePinch() {
+    const p = pinchPoints();
+    const z = PP.clamp(pinch.z0 * (p.d / pinch.d0), MIN_ZOOM, MAX_ZOOM);
+    const dx = (pinch.cx0 - pinch.ox0) / pinch.z0, dy = (pinch.cy0 - pinch.oy0) / pinch.z0;
+    V.zoom = z;
+    V.ox = p.cx - dx * z;
+    V.oy = p.cy - dy * z;
+    clampPan();
+    PP.emit('zoom', z);
+    PP.render();
+  }
+
   function onDown(e) {
+    if (e.pointerType === 'touch') {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) { e.preventDefault(); try { overlay.setPointerCapture(e.pointerId); } catch (_) { /* 합성 이벤트 */ } startPinch(); return; }
+      if (touches.size > 2 || pinch) return;
+    }
     if (activeTool || panState) return;
     if (PP.ui.isModalOpen && PP.ui.isModalOpen()) return;
     e.preventDefault();
     PP.commitTextEditor && PP.commitTextEditor(true);
-    overlay.setPointerCapture(e.pointerId);
+    try { overlay.setPointerCapture(e.pointerId); } catch (_) { /* 합성 이벤트 */ }
     document.activeElement && document.activeElement.blur && document.activeElement.blur();
     const tool = PP.tools[PP.state.tool];
     const wantPan = e.button === 1 || V.space || (tool && tool.name === 'hand' && e.button === 0);
@@ -221,6 +252,10 @@
   }
 
   function onMove(e) {
+    if (e.pointerType === 'touch' && touches.has(e.pointerId)) {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch) { if (touches.size >= 2) updatePinch(); return; }
+    }
     if (panState) {
       V.ox = panState.ox + (e.clientX - panState.x);
       V.oy = panState.oy + (e.clientY - panState.y);
@@ -247,6 +282,10 @@
   }
 
   function onUp(e) {
+    if (e.pointerType === 'touch') {
+      touches.delete(e.pointerId);
+      if (pinch) { if (touches.size === 0) pinch = null; return; }
+    }
     if (panState) {
       panState = null;
       updateCursor();
@@ -269,7 +308,10 @@
     updateCursor();
   };
   V.cancelGesture = function () {
-    if (activeTool && activeTool.cancel) activeTool.cancel();
+    if (activeTool) {
+      const c = activeTool.cancelStroke || activeTool.cancel;
+      if (c) c.call(activeTool);
+    }
     activeTool = null;
     panState = null;
   };
@@ -352,14 +394,28 @@
           tctx.globalCompositeOperation = 'source-over';
           tctx.drawImage(l.canvas, sx0, sy0, sw, sh, dx, dy, dW, dH);
           tctx.save();
-          if (PP.sel.poly && !PP.sel.float) {
+          const S = PP.sel;
+          let strokeSrc = P.canvas, ssx = sx0, ssy = sy0, ssw = sw, ssh = sh, sdx = dx, sdy = dy, sdw = dW, sdh = dH;
+          if (S.poly && !S.mask && !S.float) {
             tctx.setTransform(sc, 0, 0, sc, ox * dpr, oy * dpr);
-            PP.sel.clipCtx(tctx);
+            S.pathOn(tctx);
+            tctx.clip();
             tctx.setTransform(1, 0, 0, 1, 0, 0);
+          } else if (S.mask && !S.float) {
+            // 마스크 선택: 스트로크를 임시 캔버스에 그리고 마스크로 잘라낸 뒤 합성
+            t2ctx.setTransform(1, 0, 0, 1, 0, 0);
+            t2ctx.globalAlpha = 1;
+            t2ctx.globalCompositeOperation = 'source-over';
+            t2ctx.clearRect(0, 0, tmp2.width, tmp2.height);
+            t2ctx.imageSmoothingEnabled = cctx.imageSmoothingEnabled;
+            t2ctx.drawImage(P.canvas, sx0, sy0, sw, sh, dx, dy, dW, dH);
+            t2ctx.globalCompositeOperation = 'destination-in';
+            t2ctx.drawImage(S.mask, sx0, sy0, sw, sh, dx, dy, dW, dH);
+            strokeSrc = tmp2; ssx = 0; ssy = 0; ssw = tmp2.width; ssh = tmp2.height; sdx = 0; sdy = 0; sdw = tmp2.width; sdh = tmp2.height;
           }
           tctx.globalAlpha = P.opacity;
           tctx.globalCompositeOperation = P.erase ? 'destination-out' : 'source-over';
-          tctx.drawImage(P.canvas, sx0, sy0, sw, sh, dx, dy, dW, dH);
+          tctx.drawImage(strokeSrc, ssx, ssy, ssw, ssh, sdx, sdy, sdw, sdh);
           tctx.restore();
           cctx.globalAlpha = l.opacity;
           cctx.globalCompositeOperation = l.blend;

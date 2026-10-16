@@ -35,6 +35,8 @@
     return c;
   }
 
+  PP.softStamp = softStamp;
+
   function pixelDisc(ctx, cx, cy, d) {
     if (d > 64) {
       ctx.beginPath(); ctx.arc(cx, cy, d / 2, 0, Math.PI * 2); ctx.fill();
@@ -73,6 +75,7 @@
     constructor(o) {
       this.ctx = o.ctx;
       this.type = o.type;
+      this.cb = o.cb || null; // 보정 도구: 점마다 호출되는 콜백(x, y, size, pressure)
       this.size = o.size;
       this.hardness = PP.clamp((o.hardness == null ? 100 : o.hardness) / 100, 0, 1);
       this.spacing = Math.max(0.02, (o.spacing || 10) / 100);
@@ -177,6 +180,7 @@
     }
 
     dab1(x, y, p) {
+      if (this.cb) { this.cb(x, y, this.sizeAt(p), p); return; }
       const ctx = this.ctx;
       const size = this.sizeAt(p);
       const R = size / 2 + 3;

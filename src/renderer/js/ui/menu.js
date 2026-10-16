@@ -4,14 +4,14 @@
   const ui = (PP.ui = PP.ui || {});
   const MENU = [
     ['파일', ['file.new', 'file.open', 'file.import', '-', 'file.save', 'file.saveas', '-', 'clip.copyAll', '-', 'file.exit']],
-    ['편집', ['edit.undo', 'edit.redo', '-', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.pasteNew', 'edit.delete', '-', 'edit.selectall', 'edit.deselect']],
+    ['편집', ['edit.undo', 'edit.redo', '-', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.pasteNew', 'edit.delete', '-', 'edit.selectall', 'edit.deselect', 'edit.invertsel', '-', 'edit.transform']],
     ['보기', ['view.zoomin', 'view.zoomout', 'view.fit', 'view.actual', '-', 'view.rulers', 'view.grid', 'view.snap', 'view.gridsize', '-', 'view.theme', 'view.fullscreen']],
     ['이미지', ['img.canvasSize', 'img.resize', 'img.crop', '-', 'img.rotateCW', 'img.rotateCCW', 'img.rotate180', 'img.flipH', 'img.flipV']],
     ['레이어', ['layer.add', 'layer.dup', 'layer.del', '-', 'layer.up', 'layer.down', '-', 'layer.mergeDown', 'layer.flatten']],
-    ['필터', ['filter.blur', 'filter.sharpen', 'filter.brightness', 'filter.saturation', '-', 'filter.gray', 'filter.invert', 'filter.sepia']],
-    ['도움말', ['help.shortcuts', 'help.about']],
+    ['필터', ['filter.blur', 'filter.motion', 'filter.sharpen', '-', 'filter.brightness', 'filter.saturation', 'filter.hsl', 'filter.levels', 'filter.posterize', '-', 'filter.pixelate', 'filter.noise', 'filter.edge', 'filter.emboss', 'filter.vignette', '-', 'filter.gray', 'filter.invert', 'filter.sepia']],
+    ['도움말', ['help.shortcuts', 'help.update', 'help.about']],
   ];
-  let bar, openIdx = -1, drop = null;
+  let bar, tops, openIdx = -1, drop = null;
 
   PP.menuOpen = () => openIdx >= 0;
 
@@ -24,7 +24,7 @@
   function open(i) {
     close();
     openIdx = i;
-    const top = bar.children[i];
+    const top = tops.children[i];
     top.classList.add('open');
     drop = PP.el('div', { class: 'menu-drop' });
     let lastSep = true;
@@ -61,6 +61,8 @@
 
   ui.initMenu = function () {
     bar = PP.$('#menubar');
+    tops = PP.el('div', { class: 'menu-tops' });
+    bar.append(tops);
     MENU.forEach(([label], i) => {
       const t = PP.el('div', { class: 'menu-top', text: label });
       t.addEventListener('pointerdown', (e) => {
@@ -68,8 +70,24 @@
         if (openIdx === i) close(); else open(i);
       });
       t.addEventListener('pointerenter', () => { if (openIdx >= 0 && openIdx !== i) open(i); });
-      bar.append(t);
+      tops.append(t);
     });
+    // 오른쪽: 실행 취소/다시 실행 + (모바일) 패널 토글
+    const mk = (cls, text, title, fn) => {
+      const b = PP.el('button', { class: 'bar-btn ' + cls, text, title, onclick: fn });
+      bar.append(b);
+      return b;
+    };
+    const undoB = mk('', '↶', '실행 취소 (Ctrl+Z)', () => PP.runCmd('edit.undo'));
+    const redoB = mk('', '↷', '다시 실행 (Ctrl+Y)', () => PP.runCmd('edit.redo'));
+    mk('mobile-only', '☰', '색상/레이어 패널', () => PP.$('#sidebar').classList.toggle('open'));
+    const upd = () => {
+      undoB.disabled = !PP.cmds['edit.undo'].enabled();
+      redoB.disabled = !PP.cmds['edit.redo'].enabled();
+    };
+    PP.on('history', upd);
+    PP.on('doc:new', upd);
+    upd();
     document.addEventListener('pointerdown', (e) => {
       if (openIdx < 0) return;
       if (drop && drop.contains(e.target)) return;

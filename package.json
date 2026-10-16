@@ -1,7 +1,7 @@
 {
   "name": "paintplus",
   "productName": "PaintPlus",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "그림판+ - 기본 그림판보다 훨씬 강력한 데스크톱 그림 프로그램",
   "main": "src/main/main.js",
   "author": "Jangwoo",
@@ -12,11 +12,23 @@
     "icon": "electron scripts/make-icon.js",
     "smoke": "electron test/smoke.js",
     "build": "electron-builder --win",
-    "build:dir": "electron-builder --win --dir"
+    "build:dir": "electron-builder --win --dir",
+    "android:sync": "npx cap sync android",
+    "android:debug": "npm run android:sync && cd android && gradlew assembleDebug",
+    "android:release": "npm run android:sync && cd android && gradlew assembleRelease",
+    "serve": "node scripts/serve.js",
+    "test:web": "node test/web.js"
   },
   "devDependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/filesystem": "^7.1.9",
+    "@capacitor/share": "^7.0.4",
     "electron": "^44.7.2",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.15.3",
+    "playwright-core": "^1.64.1"
   },
   "build": {
     "appId": "com.jangwoo.paintplus",
@@ -37,7 +49,12 @@
       "ko",
       "en-US"
     ],
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "Jangwoo0827",
+      "repo": "paintplus",
+      "releaseType": "release"
+    },
     "fileAssociations": [
       {
         "ext": "paintplus",
@@ -82,5 +99,8 @@
     "portable": {
       "artifactName": "PaintPlus-Portable-${version}.exe"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

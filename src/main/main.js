@@ -1,10 +1,11 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, dialog, clipboard, nativeImage, screen, Menu, ClipboardItem } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, clipboard, nativeImage, screen, Menu, ClipboardItem, shell, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
 const OPEN_EXTS = ['.paintplus', '.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif'];
 const APP_TITLE = '그림판+';
+const HEADLESS = !!process.env.PP_HEADLESS; // 테스트 전용: 오프스크린(창 없음)
 
 let win = null;
 let allowClose = false;
@@ -18,9 +19,11 @@ if (!gotLock) {
 } else {
   app.on('second-instance', (_e, argv) => {
     if (win) {
-      if (win.isMinimized()) win.restore();
-      if (!win.isVisible()) win.show();
-      win.focus();
+      if (!HEADLESS) {
+        if (win.isMinimized()) win.restore();
+        if (!win.isVisible()) win.show();
+        win.focus();
+      }
     }
     const f = fileFromArgs(argv);
     if (f) sendOpenFile(f);
@@ -102,10 +105,11 @@ function boot() {
       nodeIntegration: false,
       sandbox: true,
       spellcheck: false,
+      offscreen: HEADLESS, // 자동 테스트: 화면에 창을 띄우지 않고 렌더링
     },
   });
   if (st.maximized) win.maximize();
-  win.once('ready-to-show', () => win.show());
+  if (!HEADLESS) win.once('ready-to-show', () => win.show());
   win.on('resize', scheduleSaveState);
   win.on('move', scheduleSaveState);
   win.on('maximize', saveWindowState);
@@ -127,7 +131,60 @@ function boot() {
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   const f = fileFromArgs(process.argv);
   if (f) pendingOpen = f;
+  setupUpdater();
 }
+
+// ---------- 업데이트 (GitHub Releases) ----------
+// 설치형: electron-updater 로 내려받아 재시작 시 설치. portable/개발 실행: 새 버전을 알리고 릴리스 페이지를 연다.
+const REPO = 'Jangwoo0827/paintplus';
+const isPortable = !!process.env.PORTABLE_EXECUTABLE_FILE;
+let autoUpdater = null;
+let manualCheck = false;
+const sendUpdate = (type, data) => { if (win && !win.isDestroyed()) win.webContents.send('app:update', { type, ...data }); };
+
+function cmpVersion(a, b) {
+  const pa = String(a).replace(/^v/, '').split('.').map(Number), pb = String(b).replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < 3; i++) { if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0) ? 1 : -1; }
+  return 0;
+}
+
+async function checkViaGithub() {
+  const res = await net.fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'PaintPlus' } });
+  if (!res.ok) throw new Error('GitHub 응답 ' + res.status);
+  const rel = await res.json();
+  if (cmpVersion(rel.tag_name, app.getVersion()) > 0) sendUpdate('available', { version: rel.tag_name.replace(/^v/, ''), url: rel.html_url, manual: true });
+  else sendUpdate('none', { version: app.getVersion() });
+}
+
+function setupUpdater() {
+  if (app.isPackaged && !isPortable) {
+    try {
+      ({ autoUpdater } = require('electron-updater'));
+      autoUpdater.autoDownload = false;
+      autoUpdater.autoInstallOnAppQuit = true;
+      autoUpdater.on('update-available', (i) => sendUpdate('available', { version: i.version }));
+      autoUpdater.on('update-not-available', () => sendUpdate('none', { version: app.getVersion() }));
+      autoUpdater.on('download-progress', (p) => sendUpdate('progress', { percent: Math.round(p.percent) }));
+      autoUpdater.on('update-downloaded', (i) => sendUpdate('ready', { version: i.version }));
+      autoUpdater.on('error', (e) => { if (manualCheck) sendUpdate('error', { message: String(e && e.message || e) }); });
+    } catch (e) { autoUpdater = null; }
+  }
+  if (app.isPackaged) setTimeout(() => checkForUpdates(false), 8000); // 시작 8초 뒤 조용히 확인
+}
+
+async function checkForUpdates(manual) {
+  manualCheck = manual;
+  try {
+    if (autoUpdater) await autoUpdater.checkForUpdates();
+    else if (app.isPackaged || manual) await checkViaGithub();
+  } catch (e) { if (manual) sendUpdate('error', { message: String(e && e.message || e) }); }
+}
+
+ipcMain.handle('app:version', () => app.getVersion());
+ipcMain.on('update:check', () => checkForUpdates(true));
+ipcMain.on('update:download', () => { if (autoUpdater) autoUpdater.downloadUpdate().catch((e) => sendUpdate('error', { message: String(e.message || e) })); });
+ipcMain.on('update:install', () => { allowClose = true; if (autoUpdater) autoUpdater.quitAndInstall(false, true); });
+ipcMain.on('update:open', (_e, url) => { if (typeof url === 'string' && url.startsWith(`https://github.com/${REPO}/`)) shell.openExternal(url); });
 
 // ---------- IPC ----------
 const recoveryFile = () => path.join(app.getPath('userData'), 'recovery.paintplus');

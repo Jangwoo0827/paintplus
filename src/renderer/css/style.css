@@ -114,8 +114,9 @@ input[type='range'] { accent-color: var(--accent); height: 16px; }
 }
 #workspace.no-rulers { grid-template-columns: 0 1fr; grid-template-rows: 0 1fr; }
 #ruler-corner { background: var(--ruler-bg); grid-area: 1 / 1; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-#ruler-h { grid-area: 1 / 2; border-bottom: 1px solid var(--border); display: block; }
-#ruler-v { grid-area: 2 / 1; border-right: 1px solid var(--border); display: block; }
+/* 눈금자 캔버스가 레이아웃 최소 크기를 붙잡지 않도록(창을 줄여도 함께 줄어듦) 0 크기 + min 100% */
+#ruler-h { grid-area: 1 / 2; border-bottom: 1px solid var(--border); display: block; width: 0; min-width: 100%; height: 20px; }
+#ruler-v { grid-area: 2 / 1; border-right: 1px solid var(--border); display: block; height: 0; min-height: 100%; width: 20px; }
 #stage { grid-area: 2 / 2; position: relative; overflow: hidden; min-width: 0; min-height: 0; }
 #view, #overlay { position: absolute; left: 0; top: 0; }
 #overlay { touch-action: none; }
@@ -250,3 +251,52 @@ input[type='range'] { accent-color: var(--accent); height: 16px; }
   padding: 8px 16px; border-radius: 18px; opacity: 0; pointer-events: none; transition: all 0.2s; z-index: 400; max-width: 80vw;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 메뉴바 우측 버튼 ---------- */
+.menu-tops { display: flex; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.menu-tops::-webkit-scrollbar { display: none; }
+.bar-btn { width: 34px; height: 27px; border: 0; background: transparent; color: var(--text); font-size: 17px; cursor: pointer; padding: 0; }
+.bar-btn:hover:not(:disabled) { background: var(--hover); }
+.bar-btn:disabled { opacity: 0.35; cursor: default; }
+.mobile-only { display: none; }
+
+/* ---------- 모바일(터치) 레이아웃 ---------- */
+.mobile { font-size: 14px; }
+.mobile .mobile-only { display: block; }
+.mobile #menubar { height: 40px; }
+.mobile .menu-top { line-height: 39px; padding: 0 14px; flex: none; }
+.mobile .bar-btn { width: 44px; height: 39px; font-size: 22px; flex: none; }
+.mobile #optionsbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; min-height: 46px; gap: 14px; }
+.mobile #optionsbar > * { flex: none; }
+.mobile .opt input[type='range'] { width: 130px; height: 28px; }
+.mobile .opt select, .mobile .opt input[type='number'] { height: 32px; }
+.mobile #main { flex-direction: column; }
+.mobile #workspace { order: 1; flex: 1; min-height: 0; }
+.mobile #toolbox {
+  order: 2; width: 100%; height: 56px; flex: none; display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden;
+  border-right: 0; border-top: 1px solid var(--border); padding: 6px; gap: 6px; justify-content: flex-start; align-items: center; scrollbar-width: none;
+}
+.mobile .tool-btn { width: 44px; height: 44px; flex: none; }
+.mobile .tool-btn svg { width: 24px; height: 24px; }
+.mobile .tool-sep { width: 1px; height: 30px; margin: 0 4px; flex: none; grid-column: auto; }
+.mobile #sidebar {
+  position: fixed; top: 40px; bottom: 56px; right: 0; width: min(88vw, 330px); z-index: 70;
+  transform: translateX(105%); transition: transform 0.2s; box-shadow: var(--shadow);
+}
+.mobile #sidebar.open { transform: none; }
+.mobile #statusbar { height: 30px; overflow-x: auto; scrollbar-width: none; }
+.mobile #statusbar > * { flex: none; }
+.mobile #st-tool, .mobile #st-snap, .mobile #st-grid, .mobile #st-zoom { display: none; }
+.mobile .layer-row .ibtn { width: 34px; height: 34px; }
+.mobile .layer-row { padding: 5px; }
+.mobile .swatches .c { width: 22px; height: 22px; }
+.mobile .modal { max-width: 94vw; min-width: 0; width: 94vw; }
+.mobile .frow > label { width: 80px; }
+.mobile .help-table { grid-template-columns: 1fr; }
+.mobile #optionsbar::-webkit-scrollbar, .mobile #toolbox::-webkit-scrollbar, .mobile #statusbar::-webkit-scrollbar { display: none; }
+.text-handle { position: absolute; width: 20px; height: 20px; line-height: 20px; text-align: center; font-size: 14px; background: var(--accent); color: #fff; border-radius: 4px; cursor: move; touch-action: none; user-select: none; }
+.mobile .text-handle { width: 30px; height: 30px; line-height: 30px; font-size: 20px; }
+
+/* 초기화가 끝나기 전에는 UI를 숨겨 반쯤 만들어진 화면이 보이지 않게 함 */
+body:not([data-ready]) #app { visibility: hidden; }
+html { background: var(--bg); }

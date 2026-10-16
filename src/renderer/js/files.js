@@ -7,6 +7,48 @@
   const baseName = (p) => p.split(/[\\/]/).pop();
   const api = window.api;
 
+
+  // ---------- 플랫폼 계층 (Electron API 없이 동작: 안드로이드 앱/브라우저) ----------
+  const cap = window.Capacitor;
+  PP.isNative = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+  const toBase64 = (bytes) => {
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+  PP.platform = {
+    pickFile(accept) {
+      return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = accept || 'image/*,.paintplus';
+        input.style.display = 'none';
+        document.body.append(input);
+        let done = false;
+        const finish = (v) => { if (!done) { done = true; input.remove(); resolve(v); } };
+        input.addEventListener('change', async () => {
+          const f = input.files && input.files[0];
+          finish(f ? { name: f.name, path: '', data: new Uint8Array(await f.arrayBuffer()) } : null);
+        });
+        input.addEventListener('cancel', () => finish(null));
+        input.click();
+      });
+    },
+    async saveBytes(name, bytes, mime) {
+      if (PP.isNative && cap.Plugins && cap.Plugins.Filesystem && cap.Plugins.Share) {
+        const w = await cap.Plugins.Filesystem.writeFile({ path: name, data: toBase64(bytes), directory: 'CACHE' });
+        await cap.Plugins.Share.share({ title: name, files: [w.uri], dialogTitle: '저장할 곳을 선택하세요' });
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([bytes], { type: mime }));
+      a.download = name;
+      document.body.append(a);
+      a.click();
+      a.remove();
+    },
+  };
+
   const F = (PP.files = {
     /** 현재 문서를 버려도 되는지 확인(저장 여부 묻기). true = 진행 */
     async confirmDiscard() {
@@ -27,7 +69,11 @@
 
     async open() {
       if (!(await F.confirmDiscard())) return;
-      if (!api) { PP.toast('브라우저 모드에서는 파일 열기를 지원하지 않습니다'); return; }
+      if (!api) {
+        const f = await PP.platform.pickFile();
+        if (f) await F.openFile(f);
+        return;
+      }
       const files = await api.openDialog({
         title: '열기',
         filters: [
@@ -79,8 +125,9 @@
 
     /** 이미지 파일을 새 레이어로 가져오기 */
     async importAsLayer() {
-      if (!api) return;
-      const files = await api.openDialog({ title: '이미지를 레이어로 가져오기', filters: [{ name: '이미지', extensions: IMG_EXTS }] });
+      const files = api
+        ? await api.openDialog({ title: '이미지를 레이어로 가져오기', filters: [{ name: '이미지', extensions: IMG_EXTS }] })
+        : [await PP.platform.pickFile('image/*')].filter(Boolean);
       if (!files.length) return;
       const bmp = await PP.bytesToBitmap(files[0].data, MIME[extOf(files[0].name)]);
       PP.layers.add('가져온 이미지');
@@ -104,7 +151,7 @@
       const first = t === 'jpg' ? 1 : t === 'webp' ? 2 : t === 'paintplus' ? 3 : (PP.doc.layers.length > 1 && !t ? 3 : 0);
       const filters = [all[first], ...all.filter((_, i) => i !== first)];
       const stem = PP.doc.name.replace(/\.[^.]+$/, '');
-      if (!api) return F.browserDownload(stem);
+      if (!api) return F.mobileSave(stem);
       const p = await api.saveDialog({ title: '다른 이름으로 저장', defaultPath: PP.doc.path || stem + '.' + filters[0].extensions[0], filters });
       if (!p) return false;
       let ext = extOf(p);
@@ -140,13 +187,32 @@
       }
     },
 
-    async browserDownload(stem) {
-      const bytes = await F.encode('png');
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
-      a.download = stem + '.png';
-      a.click();
-      return true;
+    /** 데스크톱 API가 없을 때(휴대폰/브라우저): 형식을 고르고 공유/다운로드로 내보낸다 */
+    async mobileSave(stem) {
+      const name = PP.ui.text(stem, 'text');
+      const fmt = PP.ui.select([['png', 'PNG 이미지'], ['jpg', 'JPEG 이미지'], ['webp', 'WebP 이미지'], ['paintplus', '그림판+ 프로젝트 (레이어 보존)']], PP.doc.layers.length > 1 ? 'paintplus' : 'png');
+      const r = await PP.ui.modal({
+        title: PP.isNative ? '저장 / 공유' : '저장',
+        body: [PP.ui.row('파일 이름', name), PP.ui.row('형식', fmt)],
+        buttons: [{ label: PP.isNative ? '저장/공유' : '다운로드', value: true, primary: true }, { label: '취소', value: null }],
+      }).promise;
+      if (!r) return false;
+      const type = fmt.value;
+      const fname = (name.value.trim() || stem).replace(/\.[^.]+$/, '') + '.' + type;
+      try {
+        const bytes = await F.encode(type);
+        await PP.platform.saveBytes(fname, bytes, type === 'paintplus' ? 'application/json' : MIME[type]);
+        PP.doc.name = fname;
+        PP.doc.fileType = type;
+        PP.history.markSaved();
+        PP.emit('doc:meta');
+        return true;
+      } catch (e) {
+        if (e && /cancel/i.test(String(e.message || e))) return false;
+        console.error(e);
+        PP.ui.alert('저장하지 못했습니다.\n' + (e.message || e));
+        return false;
+      }
     },
   });
   PP.defCmd('file.import', '이미지를 레이어로 가져오기...', '', () => F.importAsLayer());

@@ -46,8 +46,7 @@ module.exports = async function (t) {
   // 확대/축소 (휠)
   const z0 = await js('PP.vp.zoom');
   const [cx, cy] = await t.docToClient(640, 360);
-  t.wc.sendInputEvent({ type: 'mouseWheel', x: cx, y: cy, deltaX: 0, deltaY: -240, canScroll: true });
-  await wait(100);
+  await t.wheel(cx, cy, 240);
   await t.frame();
   t.check((await js('PP.vp.zoom')) !== z0, '마우스 휠로 확대/축소 (배율 변경됨)');
 

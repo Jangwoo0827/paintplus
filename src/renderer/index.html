@@ -2,10 +2,14 @@
 <html lang="ko" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>그림판+</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1e1f22">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/boot.js"></script>
 </head>
 <body>
   <div id="app">
@@ -61,6 +65,8 @@
   <script src="js/tools/fill.js"></script>
   <script src="js/tools/shapes.js"></script>
   <script src="js/tools/text.js"></script>
+  <script src="js/tools/wand.js"></script>
+  <script src="js/tools/retouch.js"></script>
   <script src="js/ui/dialogs.js"></script>
   <script src="js/files.js"></script>
   <script src="js/clipboard.js"></script>
@@ -71,6 +77,7 @@
   <script src="js/ui/toolbox.js"></script>
   <script src="js/ui/panels.js"></script>
   <script src="js/ui/statusbar.js"></script>
+  <script src="js/updater.js"></script>
   <script src="js/ui/help.js"></script>
   <script src="js/ui/menu.js"></script>
   <script src="js/app.js"></script>

@@ -21,11 +21,13 @@
     s.opacity = o.opacity / 100;
     s.left = PP.vp.ox + ed.x * z + 'px';
     s.top = PP.vp.oy + ed.y * z + 'px';
+    if (ed.handle) { ed.handle.style.left = PP.vp.ox + ed.x * z - 22 + 'px'; ed.handle.style.top = PP.vp.oy + ed.y * z - 22 + 'px'; }
   }
 
   PP.commitTextEditor = function (commit) {
     if (!ed) return;
     const { x, y, el } = ed;
+    if (ed.handle) ed.handle.remove();
     const text = el.innerText.replace(/ /g, ' ').replace(/\n$/, '');
     ed = null;
     el.remove();
@@ -60,7 +62,24 @@
       PP.commitTextEditor(true);
       const el = PP.el('div', { class: 'text-editor', contenteditable: 'plaintext-only', spellcheck: 'false' });
       PP.$('#text-layer').append(el);
-      ed = { x: pt.x, y: pt.y, el };
+      // 확정 전에 위치를 옮길 수 있는 이동 핸들(✥)
+      const handle = PP.el('div', { class: 'text-handle', text: '✥', title: '드래그하여 텍스트 위치 이동' });
+      PP.$('#text-layer').append(handle);
+      ed = { x: pt.x, y: pt.y, el, handle };
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try { handle.setPointerCapture(e.pointerId); } catch (_) { /* 합성 이벤트 */ }
+        const move = (ev) => {
+          if (!ed || ed.el !== el) return;
+          const d = PP.vp.clientToDoc(ev.clientX + 11, ev.clientY + 11);
+          ed.x = Math.round(d.x); ed.y = Math.round(d.y);
+          styleEditor();
+        };
+        const up = () => { handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); setTimeout(() => el.focus(), 0); };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', up);
+      });
       styleEditor();
       el.addEventListener('keydown', (e) => {
         e.stopPropagation();

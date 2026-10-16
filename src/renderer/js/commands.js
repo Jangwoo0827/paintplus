@@ -51,7 +51,8 @@
 
   // 도구 단축키 (수정키 없음)
   const TOOL_KEYS = {
-    P: 'pencil', B: 'brush', E: 'eraser', G: 'fill', 'Shift+G': 'gradient', I: 'picker',
+    S: 'smudge', 'Shift+B': 'blurbrush', 'Shift+S': 'sharpbrush', 'Shift+D': 'dodge', 'Shift+E': 'burn', K: 'clone',
+    M: 'wand', P: 'pencil', B: 'brush', E: 'eraser', G: 'fill', 'Shift+G': 'gradient', I: 'picker',
     L: 'line', R: 'rect', 'Shift+R': 'roundrect', O: 'ellipse', Y: 'triangle', N: 'polygon', W: 'arrow', C: 'curve',
     T: 'text', V: 'selrect', 'Shift+V': 'sellasso', H: 'hand', Z: 'zoom',
   };
@@ -63,7 +64,7 @@
   D('file.open', '열기...', 'Ctrl+O', () => PP.files.open());
   D('file.save', '저장', 'Ctrl+S', () => PP.files.save());
   D('file.saveas', '다른 이름으로 저장...', 'Ctrl+Shift+S', () => PP.files.saveAs());
-  D('file.exit', '끝내기', 'Ctrl+Q', () => PP.requestClose());
+  if (window.api) D('file.exit', '끝내기', 'Ctrl+Q', () => PP.requestClose());
 
   D('edit.undo', '실행 취소', 'Ctrl+Z', () => {
   if (PP.pendingActive()) { PP.cancelPending(); return; }

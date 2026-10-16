@@ -5,7 +5,7 @@
     ['도구', [
       ['연필', 'P'], ['브러시', 'B'], ['지우개', 'E'], ['페인트통', 'G'], ['그라디언트', 'Shift+G'], ['스포이드', 'I (Alt+클릭)'],
       ['직선', 'L'], ['사각형', 'R'], ['둥근 사각형', 'Shift+R'], ['원/타원', 'O'], ['삼각형', 'Y'], ['다각형', 'N'], ['화살표', 'W'], ['곡선', 'C'],
-      ['텍스트', 'T'], ['사각형 선택', 'V'], ['자유형 선택', 'Shift+V'], ['손바닥', 'H / Space+드래그'], ['돋보기', 'Z'],
+      ['마술봉', 'M'], ['손가락 / 흐림 / 선명', 'S / Shift+B / Shift+S'], ['닷지 / 번 / 복제', 'Shift+D / Shift+E / K'], ['자유 변형', 'Ctrl+T'], ['선택 반전', 'Ctrl+Shift+I'], ['텍스트', 'T'], ['사각형 선택', 'V'], ['자유형 선택', 'Shift+V'], ['손바닥', 'H / Space+드래그'], ['돋보기', 'Z'],
       ['브러시 크기', '[  ]'], ['전경/배경색 교체', 'X'], ['기본 색', 'D'],
     ]],
     ['파일 / 편집', [
@@ -30,10 +30,12 @@
   });
 
   PP.defCmd('help.about', '그림판+ 정보', '', () => {
+    const verEl = PP.el('div', { style: { fontSize: '16px', fontWeight: '600' }, text: '그림판+' });
+    if (window.api && window.api.version) window.api.version().then((v) => { verEl.textContent = '그림판+ ' + v; });
     PP.ui.modal({
       title: '그림판+ 정보',
       body: [
-        PP.el('div', { style: { fontSize: '16px', fontWeight: '600' }, text: '그림판+ 1.0.0' }),
+        verEl,
         PP.el('div', { text: '기본 그림판보다 훨씬 많은 기능을 가진 데스크톱 그림 프로그램입니다.' }),
         PP.el('div', { style: { color: 'var(--text-dim)' }, text: '레이어 · 블렌드 모드 · 다양한 브러시 · 대칭 그리기 · 필압 · 선택/변형 · 필터 · 프로젝트(.paintplus) 저장' }),
       ],

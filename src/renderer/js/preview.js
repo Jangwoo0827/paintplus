@@ -50,10 +50,9 @@
     /** 스트로크 캔버스의 r 영역을 ctx에 합성 (선택 영역 클립 적용) */
     compositeInto(ctx, r) {
       ctx.save();
-      PP.sel.clipCtx(ctx);
       ctx.globalAlpha = this.opacity;
       ctx.globalCompositeOperation = this.erase ? 'destination-out' : 'source-over';
-      ctx.drawImage(this.canvas, r.x, r.y, r.w, r.h, r.x, r.y, r.w, r.h);
+      PP.sel.drawClipped(ctx, this.canvas, r);
       ctx.restore();
     },
 

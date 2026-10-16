@@ -15,6 +15,11 @@
   };
 
   function init() {
+    // 휴대폰/태블릿(터치) 레이아웃
+    const mobile = PP.isNative || matchMedia('(pointer: coarse)').matches;
+    document.body.classList.toggle('mobile', mobile);
+    document.documentElement.classList.toggle('mobile', mobile);
+    if (mobile) PP.state.rulers = false;
     PP.vp.init();
     PP.ui.initColor();
     PP.ui.initToolbox();

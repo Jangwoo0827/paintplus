@@ -12,6 +12,12 @@
     ['fill', '페인트통', 'G', I('<path d="M4 12l8-8 8 8-8 8z"/><path d="M4 12h16"/><path d="M20 16c1 1.5 1.5 2.3 1.5 3a1.5 1.5 0 0 1-3 0c0-.7.5-1.5 1.5-3z"/>')],
     ['gradient', '그라디언트', 'Shift+G', I('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 16l10-8" stroke-dasharray="2 2.5"/>')],
     ['picker', '스포이드', 'I', I('<path d="M14 7l3 3"/><path d="M16 4l4 4-3 3-4-4z"/><path d="M13 8L5 16v3h3l8-8"/>')],
+    ['smudge', '손가락(번지기)', 'S', I('<path d="M7 20c-2-1-2-4 0-6l5-8a2 2 0 0 1 3 2l-2 4 4-1a2 2 0 0 1 1 3l-3 6c-1 2-5 3-8 0z"/>')],
+    ['blurbrush', '흐림 브러시', 'Shift+B', I('<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="2 3"/>')],
+    ['sharpbrush', '선명 브러시', 'Shift+S', I('<path d="M12 4l8 14H4z"/><path d="M12 9l3.5 6h-7z"/>')],
+    ['dodge', '닷지(밝게)', 'Shift+D', I('<circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M5.6 18.4l2-2M16.4 7.6l2-2"/>')],
+    ['burn', '번(어둡게)', 'Shift+E', I('<path d="M12 3c3 4 6 6 6 10a6 6 0 0 1-12 0c0-2 1-3 2-4 .5 2 1.5 2.5 2.5 2.5C10 9 10 6 12 3z"/>')],
+    ['clone', '복제 도장', 'K', I('<rect x="4" y="13" width="9" height="7" rx="1"/><path d="M8.5 13V9a3.5 3.5 0 1 1 7 0v1"/><path d="M15 15h5M17.5 12.5v5"/>')],
     ['sep'],
     ['line', '직선', 'L', I('<path d="M5 19L19 5"/>')],
     ['rect', '사각형', 'R', I('<rect x="4" y="6" width="16" height="12"/>')],
@@ -25,6 +31,7 @@
     ['text', '텍스트', 'T', I('<path d="M5 6V4h14v2"/><path d="M12 4v16"/><path d="M9 20h6"/>')],
     ['selrect', '사각형 선택', 'V', I('<rect x="4" y="5" width="16" height="14" stroke-dasharray="3 2.5"/>')],
     ['sellasso', '자유형 선택', 'Shift+V', I('<path d="M12 4c5 0 8 2 8 5s-3 4-6 4c-1 0-2 .5-2 1.5s.5 1.5 1 2.5" stroke-dasharray="3 2.5"/><path d="M4 9c0-3 3-5 8-5"/><circle cx="12" cy="19" r="1.4"/>')],
+    ['wand', '마술봉', 'M', I('<path d="M5 19L16 8"/><path d="M14 6l4 4"/><path d="M18 3v3M16.5 4.5h3M7 4v2M6 5h2M20 13v2M19 14h2"/>')],
     ['hand', '손바닥', 'H / Space', I('<path d="M8 13V6a1.5 1.5 0 0 1 3 0v5"/><path d="M11 11V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 11V6a1.5 1.5 0 0 1 3 0v8c0 4-2 6-5 6-3 0-4.5-1.5-6-4l-2-3a1.5 1.5 0 0 1 2.4-1.7L8 13"/>')],
     ['zoom', '돋보기', 'Z', I('<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><path d="M8 10.5h5M10.5 8v5"/>')],
   ];
@@ -77,6 +84,8 @@
     tolerance: { type: 'range', label: '허용 오차', min: 0, max: 255, unit: '' },
     expand: { type: 'range', label: '경계 확장', min: 0, max: 8, unit: 'px' },
     allLayers: { type: 'check', label: '모든 레이어 참조' },
+    strength: { type: 'range', label: '강도', min: 1, max: 100, unit: '%' },
+    contiguous: { type: 'check', label: '연결된 영역만' },
     gradType: { type: 'select', label: '모양', items: () => [['linear', '선형'], ['radial', '방사형'], ['reflected', '반사형'], ['angular', '각도형']] },
     gradColors: { type: 'select', label: '색', items: () => [['fg-bg', '전경 → 배경'], ['fg-clear', '전경 → 투명'], ['bg-fg', '배경 → 전경']] },
     sample: { type: 'select', label: '샘플', items: () => [['all', '모든 레이어'], ['layer', '현재 레이어']] },
@@ -95,16 +104,22 @@
     fill: ['tolerance', 'expand', 'opacity', 'allLayers'],
     gradient: ['gradType', 'gradColors', 'opacity'],
     picker: ['sample'],
-    line: ['lineWidth', 'opacity'],
-    rect: ['shapeMode', 'lineWidth', 'opacity'],
-    roundrect: ['shapeMode', 'lineWidth', 'radius', 'opacity'],
-    ellipse: ['shapeMode', 'lineWidth', 'opacity'],
-    triangle: ['shapeMode', 'lineWidth', 'opacity'],
-    polygon: ['shapeMode', 'lineWidth', 'opacity'],
-    arrow: ['lineWidth', 'opacity'],
-    curve: ['lineWidth', 'opacity'],
-    text: ['fontFamily', 'fontSize', 'bold', 'italic', 'opacity'],
-    selrect: ['@sel'], sellasso: ['@sel'], hand: [], zoom: [],
+    line: ['lineWidth', 'opacity', '@ops'],
+    rect: ['shapeMode', 'lineWidth', 'opacity', '@ops'],
+    roundrect: ['shapeMode', 'lineWidth', 'radius', 'opacity', '@ops'],
+    ellipse: ['shapeMode', 'lineWidth', 'opacity', '@ops'],
+    triangle: ['shapeMode', 'lineWidth', 'opacity', '@ops'],
+    polygon: ['shapeMode', 'lineWidth', 'opacity', '@ops'],
+    arrow: ['lineWidth', 'opacity', '@ops'],
+    curve: ['lineWidth', 'opacity', '@ops'],
+    text: ['fontFamily', 'fontSize', 'bold', 'italic', 'opacity', '@ops'],
+    smudge: ['size', 'strength', 'hardness', 'smoothing'],
+    blurbrush: ['size', 'strength', 'hardness', 'pressure', '@sym'],
+    sharpbrush: ['size', 'strength', 'hardness', 'pressure', '@sym'],
+    dodge: ['size', 'strength', 'hardness', 'pressure', '@sym'],
+    burn: ['size', 'strength', 'hardness', 'pressure', '@sym'],
+    clone: ['size', 'strength', 'hardness', 'spacing', '@clone'],
+    selrect: ['@sel'], sellasso: ['@sel'], wand: ['@selmode', 'tolerance', 'contiguous', 'allLayers', '@selops'], hand: [], zoom: [],
   };
   const HINTS = {
     pencil: '드래그하여 그리기 · 우클릭: 배경색 · Alt: 스포이드',
@@ -113,6 +128,11 @@
     fill: '클릭하여 채우기 · 우클릭: 배경색으로',
     gradient: '드래그하여 그라디언트 적용',
     picker: '클릭: 전경색 · 우클릭: 배경색',
+    smudge: '드래그하여 색을 문지르기',
+    dodge: '칠한 곳을 밝게 (강도로 조절)',
+    burn: '칠한 곳을 어둡게 (강도로 조절)',
+    clone: 'Alt+클릭으로 원본 지정 → 드래그로 복제',
+    wand: '클릭한 곳과 비슷한 색을 선택 · Shift: 더하기 · Alt: 빼기 · 이동/변형은 선택 도구에서',
     polygon: '클릭으로 점 추가 · 더블클릭/Enter: 완성 · Esc: 취소',
     curve: '선을 그린 뒤 드래그로 두 번 휘어 주세요',
     text: '클릭하여 입력 · Ctrl+Enter 또는 바깥 클릭: 확정 · Esc: 취소',
@@ -129,7 +149,16 @@
     const o = PP.opts(tn);
     for (const id of TOOL_OPTIONS[tn] || []) {
       if (id === '@sym') { bar.append(...symmetryControls()); continue; }
-      if (id === '@sel') { bar.append(...selectionControls()); continue; }
+      if (id === '@sel') { bar.append(...selectionControls(true)); continue; }
+      if (id === '@clone') { bar.append(PP.el('div', { class: 'opt' }, PP.el('button', { class: 'tgl', text: '원본 지정', title: 'Alt+클릭 또는 이 버튼을 누른 뒤 캔버스를 탭', onclick: () => { PP.tools.clone.armSource = true; PP.toast('복제할 원본 위치를 탭하세요'); } }))); continue; }
+      if (id === '@ops') {
+        bar.append(PP.el('div', { class: 'opt' },
+          PP.el('button', { class: 'tgl', text: '확정', title: '확정 (Enter)', onclick: () => { PP.commitPending(); PP.renderOverlay(); } }),
+          PP.el('button', { class: 'tgl', text: '취소', title: '취소 (Esc)', onclick: () => { PP.cancelPending(); PP.renderOverlay(); } })));
+        continue;
+      }
+      if (id === '@selmode') { bar.append(modeControls()); continue; }
+      if (id === '@selops') { bar.append(...opControls(false)); continue; }
       const d = DEF[id];
       bar.append(makeControl(id, d, o));
     }
@@ -195,7 +224,32 @@
     return [PP.el('div', { class: 'opt' }, PP.el('label', { text: '대칭' }), s), nWrap];
   }
 
+  const MODES = [['replace', '새 선택'], ['add', '추가'], ['sub', '빼기'], ['inter', '교차']];
+  function modeControls() {
+    const wrap = PP.el('div', { class: 'opt' }, PP.el('label', { text: '모드' }));
+    for (const [v, t] of MODES) {
+      const b = PP.el('button', { class: 'tgl' + (PP.state.selMode === v ? ' on' : ''), text: t, title: v === 'add' ? 'Shift+드래그' : v === 'sub' ? 'Alt+드래그' : v === 'inter' ? 'Shift+Alt+드래그' : '' });
+      b.addEventListener('click', () => {
+        PP.state.selMode = v;
+        wrap.querySelectorAll('.tgl').forEach((x) => x.classList.toggle('on', x === b));
+      });
+      wrap.append(b);
+    }
+    return wrap;
+  }
+  function opControls(withHint) {
+    const btn = (text, title, fn) => PP.el('button', { class: 'tgl', text, title, onclick: fn });
+    const grp = PP.el('div', { class: 'opt' },
+      btn('반전', '선택 반전 (Ctrl+Shift+I)', () => PP.runCmd('edit.invertsel')),
+      btn('해제', '선택 해제 (Ctrl+D)', () => PP.sel.deselect()),
+      btn('↔', '선택 내용 좌우 뒤집기', () => PP.sel.flipFloat(true)),
+      btn('↕', '선택 내용 상하 뒤집기', () => PP.sel.flipFloat(false)),
+      btn('⟳ 90°', '선택 내용 90° 회전', () => PP.sel.rotateFloat90()),
+      btn('확정', '변형 확정 (Enter)', () => { PP.sel.commitFloat(); PP.renderOverlay(); }),
+      btn('취소', '변형 취소 (Ctrl+Z)', () => { PP.sel.cancelFloat(); PP.renderOverlay(); }));
+    return [grp];
+  }
   function selectionControls() {
-    return [PP.el('span', { style: { color: 'var(--text-dim)' }, text: '드래그로 선택 · 선택 영역 안을 드래그하면 이동 · 모서리 핸들: 크기 · 위쪽 둥근 핸들: 회전 · Del: 삭제 · Enter: 확정' })];
+    return [modeControls(), ...opControls(true)];
   }
 })(window.PP);

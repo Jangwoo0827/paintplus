@@ -1,0 +1,7 @@
+{
+  "appId": "com.jangwoo.paintplus",
+  "appName": "그림판+",
+  "webDir": "src/renderer",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}

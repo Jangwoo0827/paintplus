@@ -72,41 +72,48 @@ module.exports = async function (t) {
 
   await js("PP.selectTool('line')");
   await t.drag([[50, 50], [250, 150]]);
+  await t.key('Return');
   t.check(t.near(await t.px(150, 100), [220, 38, 38], 40), '직선');
 
   await js("PP.selectTool('rect')"); await setShape('rect', 'stroke');
   await t.drag([[300, 50], [450, 150]]);
+  await t.key('Return');
   t.check(t.near(await t.px(300, 100), [220, 38, 38], 40) && t.near(await t.px(375, 100), white), '사각형(외곽선): 가장자리만 칠해짐');
   await setShape('rect', 'both');
   await t.drag([[500, 50], [650, 150]]);
+  await t.key('Return');
   t.check(t.near(await t.px(575, 100), [253, 224, 71], 10) && t.near(await t.px(500, 100), [220, 38, 38], 40), '사각형(외곽선+채우기): 안은 배경색');
 
   await js("PP.selectTool('roundrect')"); await setShape('roundrect', 'fill'); await js("PP.opts('roundrect').radius=40");
   await t.drag([[700, 50], [850, 150]]);
+  await t.key('Return');
   t.check(t.near(await t.px(775, 100), [220, 38, 38], 10) && t.near(await t.px(701, 51), white, 10), '둥근 사각형: 모서리는 비어 있음');
 
   await js("PP.selectTool('ellipse')"); await setShape('ellipse', 'fill');
   await t.drag([[50, 200], [250, 300]]);
+  await t.key('Return');
   t.check(t.near(await t.px(150, 250), [220, 38, 38], 10) && t.near(await t.px(55, 205), white, 10), '타원: 중앙은 채워지고 모서리는 비어 있음');
   await t.drag([[300, 200], [450, 350]], { modifiers: ['shift'] });
+  await t.key('Return');
   t.check(t.near(await t.px(375, 275), [220, 38, 38], 10), 'Shift 로 정원');
 
   await js("PP.selectTool('triangle')"); await setShape('triangle', 'fill');
   await t.drag([[500, 200], [650, 330]]);
+  await t.key('Return');
   t.check(t.near(await t.px(575, 300), [220, 38, 38], 10) && t.near(await t.px(505, 205), white, 10), '삼각형');
 
   await js("PP.selectTool('arrow')"); await setShape('arrow', 'stroke', 8);
   await t.drag([[700, 300], [900, 220]]);
+  await t.key('Return');
   t.check(t.near(await t.px(800, 260), [220, 38, 38], 40), '화살표 몸통');
 
   // 다각형: 클릭 4번 + 더블클릭으로 완성
   await js("PP.selectTool('polygon')"); await setShape('polygon', 'fill');
   for (const p of [[100, 450], [300, 430], [350, 600], [150, 620]]) await t.click(p[0], p[1]);
   const ph = await js('PP.history.stack.length');
-  const [dx, dy] = await t.docToClient(150, 620);
-  t.mouse('mouseDown', dx, dy, { button: 'left', clickCount: 2, modifiers: ['leftButtonDown'] });
-  t.mouse('mouseUp', dx, dy, { button: 'left', clickCount: 2 });
+  await t.dblclick(150, 620);
   await wait(200); await t.frame();
+  await t.key('Return');
   t.check((await js('PP.history.stack.length')) === ph + 1, '다각형: 더블클릭으로 확정되어 1단계 기록');
   t.check(t.near(await t.px(220, 530), [220, 38, 38], 10), '다각형 내부가 채워짐');
 
@@ -115,6 +122,7 @@ module.exports = async function (t) {
   await t.drag([[450, 600], [800, 600]]);
   await t.drag([[625, 450], [625, 450]]);
   await t.drag([[625, 450], [625, 450]]);
+  await t.key('Return');
   const curveHit = await js(`(()=>{const d=PP.doc.active().ctx.getImageData(560,440,130,170).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>128)n++;return n})()`);
   t.check(curveHit > 40, `곡선: 직선이 위로 휘어 그려짐 (${curveHit}px)`);
   await t.shot('shapes');
@@ -124,6 +132,7 @@ module.exports = async function (t) {
   await js("PP.setColor('fg','#000000'); PP.selectTool('rect')");
   await setShape('rect', 'stroke', 6);
   await t.drag([[100, 100], [400, 300]]);
+  await t.key('Return');
   await js("PP.setColor('fg','#16a34a'); PP.selectTool('fill'); PP.opts('fill').tolerance=32; PP.opts('fill').expand=1;");
   await t.click(250, 200);
   t.check(t.near(await t.px(250, 200), [22, 163, 74], 6), '페인트통: 닫힌 사각형 안쪽이 채워짐');

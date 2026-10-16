@@ -19,6 +19,14 @@ contextBridge.exposeInMainWorld('api', {
   pathForFile: (f) => {
     try { return webUtils.getPathForFile(f); } catch (_) { return ''; }
   },
+  version: () => ipcRenderer.invoke('app:version'),
+  update: {
+    check: () => ipcRenderer.send('update:check'),
+    download: () => ipcRenderer.send('update:download'),
+    install: () => ipcRenderer.send('update:install'),
+    open: (url) => ipcRenderer.send('update:open', url),
+  },
+  onUpdate: (cb) => ipcRenderer.on('app:update', (_e, d) => cb(d)),
   onCloseRequest: (cb) => ipcRenderer.on('app:close-request', () => cb()),
   onOpenFile: (cb) => ipcRenderer.on('app:open-file', (_e, p) => cb(p)),
 });
