@@ -10,7 +10,7 @@
     ['레이어', ['layer.add', 'layer.dup', 'layer.del', '-', 'layer.up', 'layer.down', '-', 'layer.mergeDown', 'layer.flatten']],
     ['필터', ['filter.blur', 'filter.motion', 'filter.sharpen', '-', 'filter.brightness', 'filter.saturation', 'filter.hsl', 'filter.levels', 'filter.posterize', '-', 'filter.pixelate', 'filter.noise', 'filter.edge', 'filter.emboss', 'filter.vignette', '-', 'filter.gray', 'filter.invert', 'filter.sepia']],
     ['설정', ['app.settings', 'help.update', 'view.theme']],
-    ['도움말', ['help.shortcuts', 'help.update', 'help.about']],
+    ['도움말', ['help.tutorial2d', 'help.tutorial3d', '-', 'help.shortcuts', 'help.update', 'help.about']],
   ];
   const MENU3D = [
     ['파일', ['file.new', 'file.new3d', 'file.open', 'file.import3d', '-', 'file.save', 'file.saveas', '-', 'three.exportGLB', 'three.exportOBJ', 'three.exportSTL', 'three.exportPNG', 'three.to2D', '-', 'app.hub', 'file.exit']],
@@ -19,7 +19,7 @@
     ['추가', ['three.add.cube', 'three.add.sphere', 'three.add.ico', 'three.add.cylinder', 'three.add.cone', 'three.add.torus', 'three.add.plane', '-', 'three.add.sun', 'three.add.point']],
     ['보기', ['three.shade.solid', 'three.shade.wire', 'three.shade.render', '-', 'three.view.front', 'three.view.right', 'three.view.top', 'three.view.persp', '-', 'view.theme', 'view.fullscreen']],
     ['설정', ['app.settings', 'help.update', 'view.theme']],
-    ['도움말', ['help.shortcuts', 'help.update', 'help.about']],
+    ['도움말', ['help.tutorial2d', 'help.tutorial3d', '-', 'help.shortcuts', 'help.update', 'help.about']],
   ];
   let MENU = MENU2D;
   let bar, tops, openIdx = -1, drop = null;

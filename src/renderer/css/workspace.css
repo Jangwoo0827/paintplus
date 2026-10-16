@@ -77,6 +77,23 @@
 .mod-name { flex: 1; font-weight: 600; }
 .mod-head .ibtn { width: 22px; height: 22px; border: 0; background: transparent; color: var(--text-dim); cursor: pointer; padding: 0; }
 .mod-head .ibtn:hover { color: var(--text); }
+/* ---------- 튜토리얼 ---------- */
+.tut-ring { position: fixed; z-index: 350; pointer-events: none; border: 2px solid var(--accent); border-radius: 8px; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.35), 0 0 12px var(--accent); transition: all 0.2s; }
+.tut-ring[hidden] { display: none; }
+.tut-card { position: fixed; z-index: 360; background: var(--panel); color: var(--text); border: 1px solid var(--accent); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; max-width: calc(100vw - 16px); }
+.tut-card.ok { border-color: #4ade80; }
+.tut-head { display: flex; align-items: center; justify-content: space-between; color: var(--text-dim); font-size: 11.5px; }
+.tut-x { border: 0; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+.tut-title { font-size: 15px; font-weight: 700; }
+.tut-text { font-size: 13px; line-height: 1.55; }
+.tut-hint { color: var(--accent); font-size: 12.5px; font-weight: 600; }
+.tut-hint[hidden] { display: none; }
+.tut-btns { display: flex; gap: 6px; margin-top: 4px; }
+.tut-btns button { height: 28px; padding: 0 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); border-radius: 5px; cursor: pointer; }
+.tut-btns button:disabled { opacity: 0.4; cursor: default; }
+.tut-btns .tut-skip { margin-left: auto; background: transparent; border-color: transparent; color: var(--text-dim); }
+.tut-btns .primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.mobile .tut-card { padding: 10px 12px; }
 .mobile #ws3d { flex-direction: column; }
 .mobile #tb3d { order: 2; width: 100%; height: 56px; display: flex; flex-direction: row; overflow-x: auto; border-right: 0; border-top: 1px solid var(--border); gap: 6px; align-items: center; justify-content: flex-start; }
 .mobile #tb3d .tool-btn { width: 44px; height: 44px; flex: none; }
