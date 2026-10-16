@@ -77,8 +77,13 @@
       });
     }
     addMesh(kind, data = {}) {
-      let geom;
-      if (data.geomId && this.assets.has(data.geomId)) geom = this.assets.get(data.geomId);
+      let geom, em = null, mods = [], smooth = false;
+      if (data.em) {
+        em = PP.EditMesh.fromJSON(data.em);
+        mods = (data.mods || []).map((m) => Object.assign({}, m));
+        smooth = !!data.smooth;
+        geom = Scene3D.emGeometry(em, mods, smooth);
+      } else if (data.geomId && this.assets.has(data.geomId)) geom = this.assets.get(data.geomId);
       else geom = PRIMS[kind] ? PRIMS[kind][1]() : new THREE.BoxGeometry(1, 1, 1);
       const mesh = new THREE.Mesh(geom, this.makeMaterial(data.mat));
       mesh.castShadow = mesh.receiveShadow = true;
@@ -87,7 +92,7 @@
       this.applyTransform(mesh, data);
       mesh.visible = data.visible !== false;
       this.root.add(mesh);
-      const it = { id, name: data.name || (PRIMS[kind] ? PRIMS[kind][0] : '메쉬'), type: 'mesh', kind, obj3d: mesh, geomId: data.geomId || null };
+      const it = { id, name: data.name || (PRIMS[kind] ? PRIMS[kind][0] : '메쉬'), type: 'mesh', kind, obj3d: mesh, geomId: em ? null : data.geomId || null, em, mods, smooth };
       mesh.userData.itemId = id;
       this.items.push(it);
       return it;
@@ -110,6 +115,32 @@
       l.userData.itemId = id;
       this.items.push(it);
       return it;
+    }
+    /** 편집 가능한 메쉬(em)에 모디파이어를 적용한 렌더용 지오메트리 */
+    static emGeometry(em, mods, smooth) {
+      const g = PP.EditMesh.applyMods(em, mods).toGeometry(smooth);
+      g.userData.own = true;
+      return g;
+    }
+    /** 도형/가져온 메쉬를 편집 가능한 em 으로 바꾼다. 이미 em 이면 false */
+    convertToEM(it) {
+      if (it.em || it.type !== 'mesh') return false;
+      const EM = PP.EditMesh;
+      const prim = !it.geomId && PRIMS[it.kind];
+      it.em = prim ? EM.make(it.kind) : EM.fromGeometry(it.obj3d.geometry);
+      it.mods = [];
+      it.smooth = !!prim && ['sphere', 'ico', 'torus'].includes(it.kind);
+      it.geomId = null;
+      const old = it.obj3d.geometry;
+      this.rebuild(it);
+      if (prim) old.dispose();
+      return true;
+    }
+    rebuild(it) {
+      if (!it.em) return;
+      const old = it.obj3d.geometry;
+      it.obj3d.geometry = Scene3D.emGeometry(it.em, it.mods, it.smooth);
+      if (old && old.userData.own) old.dispose();
     }
     applyTransform(o, d, defPos) {
       const p = d.pos || defPos || [0, 0, 0];
@@ -149,6 +180,7 @@
         const m = o.material;
         d.mat = { color: '#' + m.color.getHexString(), roughness: m.roughness, metalness: m.metalness, emissive: '#' + m.emissive.getHexString(), wireframe: m.wireframe };
         if (it.geomId) d.geomId = it.geomId;
+        if (it.em) { d.em = it.em.toJSON(); d.mods = it.mods; d.smooth = it.smooth; }
       } else d.light = { color: '#' + o.color.getHexString(), intensity: o.intensity };
       return d;
     }

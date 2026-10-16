@@ -31,7 +31,7 @@ async function runOne(browser, server, name) {
   await page.goto(`http://localhost:${port}/index.html`);
   await page.waitForFunction(() => document.body.dataset.ready === '1');
   await page.waitForTimeout(200);
-  if (name !== 'three') await page.evaluate(() => PP.hub && PP.hub.close());
+  if (!name.startsWith('three')) await page.evaluate(() => PP.hub && PP.hub.close());
 
   const results = [];
   const wait = (ms) => page.waitForTimeout(ms);

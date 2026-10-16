@@ -22,5 +22,12 @@
   D('three.shade.solid', '솔리드', '', () => T().setShading('solid'), { checked: () => T().shading === 'solid' });
   D('three.shade.wire', '와이어프레임', '', () => T().setShading('wire'), { checked: () => T().shading === 'wire' });
   D('three.shade.render', '렌더 (그림자)', '', () => T().setShading('render'), { checked: () => T().shading === 'render' });
+  const ED = () => PP.three.edit;
+  D('three.edit.toggle', '편집 모드 전환 (Tab)', '', () => ED().toggle());
+  for (const [id, label, fn] of [['mode.vert', '점 선택 (1)', () => ED().setMode('vert')], ['mode.edge', '선 선택 (2)', () => ED().setMode('edge')], ['mode.face', '면 선택 (3)', () => ED().setMode('face')],
+    ['extrude', '돌출 (E)', () => ED().extrude()], ['inset', '인셋 (I)', () => ED().inset()], ['bevel', '베벨 (B)', () => ED().bevel()], ['loopcut', '루프 컷 (L)', () => ED().loopCut()],
+    ['merge', '병합 (M)', () => ED().merge()], ['del', '삭제 (X)', () => ED().del()], ['subdivide', '세분화 (W)', () => ED().subdivide()], ['flip', '면 뒤집기', () => ED().flip()]]) {
+    D('three.edit.' + id, label, '', fn, { enabled: () => ED().on, checked: id.startsWith('mode.') ? () => ED().on && ED().mode === id.slice(5) : undefined });
+  }
   for (const [k, n] of [['front', '앞'], ['right', '옆'], ['top', '위'], ['persp', '원근']]) D('three.view.' + k, n + ' 시점', '', () => T().view(k));
 })(window.PP);

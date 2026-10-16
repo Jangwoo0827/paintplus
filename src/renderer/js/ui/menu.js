@@ -15,6 +15,7 @@
   const MENU3D = [
     ['파일', ['file.new', 'file.new3d', 'file.open', 'file.import3d', '-', 'file.save', 'file.saveas', '-', 'three.exportGLB', 'three.exportOBJ', 'three.exportSTL', 'three.exportPNG', 'three.to2D', '-', 'app.hub', 'file.exit']],
     ['편집', ['edit.undo', 'edit.redo', '-', 'three.dup', 'three.del', '-', 'three.focus']],
+    ['메쉬', ['three.edit.toggle', '-', 'three.edit.mode.vert', 'three.edit.mode.edge', 'three.edit.mode.face', '-', 'three.edit.extrude', 'three.edit.inset', 'three.edit.bevel', 'three.edit.loopcut', 'three.edit.merge', 'three.edit.subdivide', 'three.edit.flip', 'three.edit.del']],
     ['추가', ['three.add.cube', 'three.add.sphere', 'three.add.ico', 'three.add.cylinder', 'three.add.cone', 'three.add.torus', 'three.add.plane', '-', 'three.add.sun', 'three.add.point']],
     ['보기', ['three.shade.solid', 'three.shade.wire', 'three.shade.render', '-', 'three.view.front', 'three.view.right', 'three.view.top', 'three.view.persp', '-', 'view.theme', 'view.fullscreen']],
     ['설정', ['app.settings', 'help.update', 'view.theme']],

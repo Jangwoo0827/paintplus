@@ -11,13 +11,16 @@
     shading: 'solid',
     grid: true,
     snap: false,
+    gridSize: 0.5,
     ready: false,
+    hook: { on: false }, // 편집 모드(edit3d.js)가 채운다
   });
 
   let renderer, camera, orbit, tc, canvas, stageEl, wsEl;
   let gridH, axesH, boxH, hemi, studio;
   let queued = false;
   let el = {}; // 패널 DOM 참조
+  T.el = el;
 
   const ICON = (d) => `<svg viewBox="0 0 24 24">${d}</svg>`;
   const TOOLS3 = [
@@ -60,7 +63,14 @@
     bar.append(
       PP.el('span', { class: 'opt-title', text: '3D' }), sh,
       mkTgl('격자', '격자 표시', () => T.grid, (v) => { T.grid = v; if (gridH) gridH.visible = v; T.request(); }),
-      mkTgl('스냅', '이동 0.5 / 회전 15° / 크기 0.25 단위로 맞춤', () => T.snap, (v) => { T.snap = v; T.applySnap(); }),
+      mkTgl('스냅', '격자 크기 단위로 이동 / 회전 15° / 크기 0.25 단위로 맞춤', () => T.snap, (v) => { T.snap = v; T.applySnap(); }),
+      (el.gridSel = (() => {
+        const g = PP.el('select', { title: '격자 / 스냅 간격' });
+        for (const v of [0.1, 0.25, 0.5, 1]) g.append(PP.el('option', { value: v, text: v + ' 단위' }));
+        g.value = T.gridSize;
+        g.addEventListener('change', () => { T.gridSize = +g.value; buildGrid(); T.applySnap(); T.request(); });
+        return g;
+      })()),
       ...[['앞', 'front'], ['옆', 'right'], ['위', 'top'], ['원근', 'persp']].map(([t, v]) => PP.el('button', { class: 'tgl', text: t, title: '시점: ' + t, onclick: () => T.view(v) })),
       PP.el('label', { class: 'set-dim', text: '배경' }),
       (el.bg = PP.el('input', { type: 'color', value: '#2a2d33', title: '배경색', oninput: (e) => { if (T.scene) { T.scene.bg = e.target.value; T.applyBg(); } }, onchange: () => T.commit('배경색') })),
@@ -97,12 +107,16 @@
     tc = new TransformControls(camera, canvas);
     tc.addEventListener('dragging-changed', (e) => {
       orbit.enabled = !e.value;
+      if (T.hook.on) { T.hook.drag(e.value); return; }
       if (!e.value) { T.commit('변형'); T.refreshProps(); }
     });
-    tc.addEventListener('objectChange', () => { updateBox(); T.refreshTransformFields(); T.request(); });
+    tc.addEventListener('objectChange', () => {
+      if (T.hook.on) { T.hook.change(); T.request(); return; }
+      updateBox(); T.refreshTransformFields(); T.request();
+    });
     tc.addEventListener('change', () => T.request());
 
-    gridH = new THREE.GridHelper(20, 20, 0x6b7280, 0x3b4048);
+    buildGrid();
     axesH = new THREE.AxesHelper(1.5);
     axesH.material.depthTest = false;
     boxH = new THREE.Box3Helper(new THREE.Box3(), 0xffc83d);
@@ -115,7 +129,15 @@
     bindPointer();
     PP.on('theme', () => T.request());
     PP.on('frame3d', () => T.render());
+    T.gl = { renderer, camera, orbit, tc, canvas, boxH, get grid() { return gridH; } };
+    PP.emit('three:init');
   };
+  function buildGrid() {
+    if (gridH) { if (gridH.parent) gridH.parent.remove(gridH); gridH.geometry.dispose(); }
+    gridH = new THREE.GridHelper(20, Math.round(20 / T.gridSize), 0x6b7280, 0x3b4048);
+    gridH.visible = T.grid;
+    if (T.scene) T.scene.scene.add(gridH);
+  }
 
   // ---------- 장면 연결 ----------
   T.attach = function (s3) {
@@ -138,6 +160,7 @@
   function detach() {
     const s = T.scene;
     if (!s) return;
+    if (T.hook.on) T.hook.exit(true);
     s.camera = { pos: camera.position.toArray(), target: orbit.target.toArray() };
     tc.detach();
     s.scene.remove(gridH, axesH, boxH, hemi, studio, tc.getHelper());
@@ -197,7 +220,7 @@
     if (!silent) T.request();
   };
   T.applySnap = function () {
-    tc.setTranslationSnap(T.snap ? 0.5 : null);
+    tc.setTranslationSnap(T.snap && !T.hook.on ? T.gridSize : null);
     tc.setRotationSnap(T.snap ? 15 * DEG : null);
     tc.setScaleSnap(T.snap ? 0.25 : null);
   };
@@ -224,16 +247,18 @@
 
   // ---------- 선택 ----------
   function attachSel() {
+    if (T.hook.on) { T.hook.attach(); return; }
     const it = T.scene && T.scene.byId(T.sel);
     if (it && T.mode !== 'select') { tc.attach(it.obj3d); T.applySnap(); } else tc.detach();
   }
   function updateBox() {
     const it = T.scene && T.scene.byId(T.sel);
-    if (!it) { boxH.visible = false; return; }
+    if (!it || T.hook.on) { boxH.visible = false; return; }
     boxH.box.setFromObject(it.type === 'light' ? it.proxy : it.obj3d);
     boxH.visible = true;
   }
   T.select = function (id) {
+    if (T.hook.on && id !== T.sel) T.hook.exit();
     T.sel = id || null;
     attachSel();
     T.refreshAll();
@@ -248,6 +273,7 @@
       const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
       down = null;
       if (moved > 5 || e.button !== 0 || !T.scene) return;
+      if (T.hook.on) { T.hook.pick(e); return; }
       const r = canvas.getBoundingClientRect();
       const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       const ray = new THREE.Raycaster();
@@ -270,6 +296,7 @@
   T.add = function (type, kind) {
     const s = T.scene;
     if (!s) return;
+    if (T.hook.on) T.hook.exit();
     const it = type === 'light' ? s.addLight(kind) : s.addMesh(kind, { pos: [0, kind === 'plane' ? 0 : 0.5, 0] });
     T.commit('추가: ' + it.name);
     T.select(it.id);
@@ -277,6 +304,7 @@
   T.deleteSel = function () {
     const s = T.scene;
     if (!s || !T.sel) return;
+    if (T.hook.on) { T.hook.del(); return; }
     const it = s.byId(T.sel);
     tc.detach();
     s.remove(T.sel);
@@ -288,6 +316,7 @@
   T.duplicate = function () {
     const s = T.scene;
     if (!s || !T.sel) return;
+    if (T.hook.on) T.hook.exit();
     const c = s.clone(T.sel);
     if (c) { T.commit('복제'); T.select(c.id); }
   };
@@ -296,6 +325,7 @@
   function afterHistory() {
     tc.detach();
     if (!T.scene.byId(T.sel)) T.sel = null;
+    if (T.hook.on) T.hook.history();
     T.applyBg();
     T.setShading(T.shading, true);
     attachSel();
@@ -404,11 +434,13 @@
         slider('세기', 0, it.kind === 'sun' ? 10 : 200, it.kind === 'sun' ? 0.1 : 1, o.intensity, (v) => { o.intensity = v; }, () => T.commit('조명 세기')),
       );
     }
+    if (T.hook.props) T.hook.props(p, it);
   };
 
   // ---------- 키보드 (3D 작업실이 활성일 때 commands.js 가 먼저 호출) ----------
   T.keydown = function (e) {
     const k = e.key.toLowerCase();
+    if (T.hook.keydown && T.hook.keydown(e)) return true;
     if (e.ctrlKey || e.metaKey) {
       if (k === 'z' && !e.shiftKey) { T.undo(); return true; }
       if (k === 'y' || (k === 'z' && e.shiftKey)) { T.redo(); return true; }

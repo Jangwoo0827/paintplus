@@ -65,6 +65,18 @@
 .props3d input[type=text] { flex: 1; min-width: 0; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; height: 24px; padding: 0 6px; }
 .tf-grid { display: grid; grid-template-columns: 42px 1fr 1fr 1fr; gap: 4px; align-items: center; margin: 6px 0; }
 .tf-grid input { width: 100%; min-width: 0; height: 24px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+.edit-row, .edit-params { display: flex; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
+.edit3d .tgl, .edit-modes .tgl { height: 24px; padding: 0 9px; border: 1px solid var(--border); background: var(--input-bg); border-radius: 4px; cursor: pointer; }
+.edit3d .tgl.on, .edit-modes .tgl.on, #tb3d .tool-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.edit-modes { display: inline-flex; align-items: center; gap: 4px; }
+.edit-modes[hidden], #side3d section[hidden] { display: none; }
+.mod-f { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+.mod-f input, .mod-f select { width: 62px; height: 22px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+.mod-row { border: 1px solid var(--border); border-radius: 6px; padding: 5px 7px; margin: 5px 0; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.mod-head { display: flex; align-items: center; gap: 6px; width: 100%; }
+.mod-name { flex: 1; font-weight: 600; }
+.mod-head .ibtn { width: 22px; height: 22px; border: 0; background: transparent; color: var(--text-dim); cursor: pointer; padding: 0; }
+.mod-head .ibtn:hover { color: var(--text); }
 .mobile #ws3d { flex-direction: column; }
 .mobile #tb3d { order: 2; width: 100%; height: 56px; display: flex; flex-direction: row; overflow-x: auto; border-right: 0; border-top: 1px solid var(--border); gap: 6px; align-items: center; justify-content: flex-start; }
 .mobile #tb3d .tool-btn { width: 44px; height: 44px; flex: none; }
@@ -78,3 +90,4 @@
 .mobile .hub-side { width: 100%; flex-direction: row; flex-wrap: wrap; flex: none; max-height: 45vh; }
 .mobile .hub-logo { width: 100%; }
 .mobile .hub-btn { font-size: 14px; }
+.props3d .frow.chk > label { width: auto; }
