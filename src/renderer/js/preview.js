@@ -25,6 +25,7 @@
       this.layer = layer;
       this.opacity = opt.opacity == null ? 1 : opt.opacity;
       this.erase = !!opt.erase;
+      this.blend = opt.blend || null;
       this.active = true;
       this.bounds = null;
       return this.ctx;
@@ -51,7 +52,8 @@
     compositeInto(ctx, r) {
       ctx.save();
       ctx.globalAlpha = this.opacity;
-      ctx.globalCompositeOperation = this.erase ? 'destination-out' : 'source-over';
+      // alpha lock: paint only where the layer already has pixels
+      ctx.globalCompositeOperation = this.erase ? 'destination-out' : (this.layer && this.layer.alphaLock ? 'source-atop' : (this.blend || 'source-over'));
       PP.sel.drawClipped(ctx, this.canvas, r);
       ctx.restore();
     },
@@ -61,9 +63,10 @@
       const layer = this.layer;
       const r = this.bounds;
       this.active = false;
-      this.layer = null;
-      if (!r) { PP.render(); return; }
+      if (!r) { this.layer = null; PP.render(); return; }
+      // this.layer 는 투명도 잠금 판단에 필요하므로 병합이 끝난 뒤에 비운다
       PP.history.pixelOp(layer, r, name, () => this.compositeInto(layer.ctx, r));
+      this.layer = null;
       this.ctx.clearRect(r.x, r.y, r.w, r.h);
       this.bounds = null;
       PP.render();

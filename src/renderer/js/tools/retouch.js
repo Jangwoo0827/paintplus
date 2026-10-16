@@ -5,7 +5,7 @@
  */
 (function (PP) {
   const TILE = 128;
-  const LABELS = { smudge: '손가락', blurbrush: '흐림 브러시', sharpbrush: '선명 브러시', dodge: '닷지', burn: '번', clone: '복제 도장' };
+  const LABELS = { smudge: '손가락', oil: '유화/아크릴(색 섞기)', liquify: '픽셀 유동화', blurbrush: '흐림 브러시', sharpbrush: '선명 브러시', dodge: '닷지', burn: '번', clone: '복제 도장' };
 
   /** 획 하나 동안의 변경 전 타일 보관 */
   class Session {
@@ -61,6 +61,7 @@
     const c = layer.ctx;
     c.save();
     c.globalAlpha = a;
+    if (layer.alphaLock) c.globalCompositeOperation = 'source-atop';
     c.drawImage(res, rect.x, rect.y);
     c.restore();
   }
@@ -90,6 +91,61 @@
       nx.globalAlpha = 0.55;
       nx.drawImage(pick, 0, 0);
       ctx.buf = nb;
+    },
+    oil(ctx, o, x, y, size) {
+      // 붓에 묻은 물감(전경색)을 캔버스 색과 섞으며 끌고 간다
+      const r = dabRect(x, y, size);
+      if (!r) return;
+      ctx.ses.touch(r);
+      const m = maskFor(r, x, y, size, o.hardness / 100);
+      let b = PP.makeCanvas(r.w, r.h);
+      const bx = b.getContext('2d');
+      if (!ctx.buf) { bx.fillStyle = PP.state.fg; bx.fillRect(0, 0, r.w, r.h); } else bx.drawImage(ctx.buf, 0, 0, ctx.buf.width, ctx.buf.height, 0, 0, r.w, r.h);
+      writeBack(ctx.layer, r, masked(b, m), o.strength / 100);
+      const pick = PP.cropCanvas(ctx.layer.canvas, r);
+      bx.globalAlpha = 0.3;
+      bx.drawImage(pick, 0, 0);
+      ctx.buf = b;
+    },
+    liquify(ctx, o, x, y, size) {
+      const r = dabRect(x, y, size);
+      if (!r) return;
+      ctx.ses.touch(r);
+      const prev = ctx.last || { x, y };
+      const dx = x - prev.x, dy = y - prev.y;
+      ctx.last = { x, y };
+      const src = PP.cropCanvas(ctx.layer.canvas, r).getContext('2d', { willReadFrequently: true }).getImageData(0, 0, r.w, r.h);
+      const out = new ImageData(new Uint8ClampedArray(src.data), r.w, r.h);
+      const rad = size / 2, cx = x - r.x, cy = y - r.y, k = o.strength / 100;
+      const S = src.data, O = out.data, W = r.w, H = r.h;
+      const sample = (fx, fy, oi) => {
+        const x0 = Math.floor(fx), y0 = Math.floor(fy);
+        if (x0 < 0 || y0 < 0 || x0 >= W - 1 || y0 >= H - 1) return;
+        const tx = fx - x0, ty = fy - y0;
+        for (let c = 0; c < 4; c++) {
+          const a = S[(y0 * W + x0) * 4 + c], b = S[(y0 * W + x0 + 1) * 4 + c], d = S[((y0 + 1) * W + x0) * 4 + c], e = S[((y0 + 1) * W + x0 + 1) * 4 + c];
+          O[oi + c] = a * (1 - tx) * (1 - ty) + b * tx * (1 - ty) + d * (1 - tx) * ty + e * tx * ty;
+        }
+      };
+      for (let py = 0; py < H; py++) {
+        for (let px = 0; px < W; px++) {
+          const ddx = px - cx, ddy = py - cy, dist = Math.hypot(ddx, ddy);
+          if (dist >= rad) continue;
+          let w = 1 - dist / rad;
+          w = w * w * k;
+          let sx, sy;
+          if (o.mode === 'bloat') { const f = 1 - 0.6 * w; sx = cx + ddx * f; sy = cy + ddy * f; }
+          else if (o.mode === 'pinch') { const f = 1 + 0.6 * w; sx = cx + ddx * f; sy = cy + ddy * f; }
+          else if (o.mode === 'twirl') { const a = w * 0.5; sx = cx + ddx * Math.cos(a) + ddy * Math.sin(a); sy = cy - ddx * Math.sin(a) + ddy * Math.cos(a); }
+          else { sx = px - dx * w * 0.85; sy = py - dy * w * 0.85; }
+          sample(sx, sy, (py * W + px) * 4);
+        }
+      }
+      const tmp = PP.makeCanvas(W, H);
+      tmp.getContext('2d').putImageData(out, 0, 0);
+      const lc = ctx.layer.ctx;
+      lc.clearRect(r.x, r.y, W, H);
+      lc.drawImage(tmp, r.x, r.y);
     },
     blurbrush(ctx, o, x, y, size) {
       const r = dabRect(x, y, size);
@@ -176,8 +232,8 @@
           PP.doc.touch(layer);
         };
         this.stroke = new PP.Stroke({
-          ctx: null, type: 'custom', cb, size: o.size, hardness: o.hardness, spacing: name === 'smudge' ? 6 : o.spacing,
-          smoothing: o.smoothing, pressure: o.pressure && name !== 'smudge', color: '#000000',
+          ctx: null, type: 'custom', cb, size: o.size, hardness: o.hardness, spacing: name === 'smudge' || name === 'oil' ? 6 : name === 'liquify' ? 4 : o.spacing,
+          smoothing: o.smoothing, pressure: o.pressure && name !== 'smudge' && name !== 'oil' && name !== 'liquify', color: '#000000',
         });
         this.stroke.start(pt);
         PP.render();

@@ -3,9 +3,9 @@
 (function (PP) {
   const ui = (PP.ui = PP.ui || {});
   const MENU = [
-    ['파일', ['file.new', 'file.open', 'file.import', '-', 'file.save', 'file.saveas', '-', 'clip.copyAll', '-', 'file.exit']],
+    ['파일', ['file.new', 'file.open', 'file.import', '-', 'file.save', 'file.saveas', '-', 'clip.copyAll', 'file.timelapse', '-', 'file.exit']],
     ['편집', ['edit.undo', 'edit.redo', '-', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.pasteNew', 'edit.delete', '-', 'edit.selectall', 'edit.deselect', 'edit.invertsel', '-', 'edit.transform']],
-    ['보기', ['view.zoomin', 'view.zoomout', 'view.fit', 'view.actual', '-', 'view.rulers', 'view.grid', 'view.snap', 'view.gridsize', '-', 'view.theme', 'view.fullscreen']],
+    ['보기', ['view.zoomin', 'view.zoomout', 'view.fit', 'view.actual', '-', 'view.rulers', 'view.grid', 'view.snap', 'view.gridsize', '-', 'view.flip', 'view.reference', '-', 'view.theme', 'view.fullscreen']],
     ['이미지', ['img.canvasSize', 'img.resize', 'img.crop', '-', 'img.rotateCW', 'img.rotateCCW', 'img.rotate180', 'img.flipH', 'img.flipV']],
     ['레이어', ['layer.add', 'layer.dup', 'layer.del', '-', 'layer.up', 'layer.down', '-', 'layer.mergeDown', 'layer.flatten']],
     ['필터', ['filter.blur', 'filter.motion', 'filter.sharpen', '-', 'filter.brightness', 'filter.saturation', 'filter.hsl', 'filter.levels', 'filter.posterize', '-', 'filter.pixelate', 'filter.noise', 'filter.edge', 'filter.emboss', 'filter.vignette', '-', 'filter.gray', 'filter.invert', 'filter.sepia']],

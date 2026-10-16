@@ -38,7 +38,7 @@
       const src = doc.layers[i];
       PP.history.structural('레이어 복제', () => {
         const l = new PP.Layer(doc.width, doc.height, src.name + ' 복사본', {
-          canvas: PP.cloneCanvas(src.canvas), visible: src.visible, locked: false, opacity: src.opacity, blend: src.blend,
+          canvas: PP.cloneCanvas(src.canvas), visible: src.visible, locked: false, opacity: src.opacity, blend: src.blend, alphaLock: src.alphaLock, clip: src.clip,
         });
         doc.layers.splice(i + 1, 0, l);
         doc.activeId = l.id;

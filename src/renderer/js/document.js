@@ -18,6 +18,8 @@
       this.locked = !!opt.locked;
       this.opacity = opt.opacity == null ? 1 : opt.opacity;
       this.blend = opt.blend || 'source-over';
+      this.alphaLock = !!opt.alphaLock;
+      this.clip = !!opt.clip;
     }
     get ctx() {
       if (!this._ctx || this._ctxCanvas !== this.canvas) {
@@ -96,7 +98,7 @@
         activeId: this.activeId,
         layers: this.layers.map((l) => ({
           id: l.id, name: l.name, visible: l.visible, locked: l.locked,
-          opacity: l.opacity, blend: l.blend, canvas: l.canvas,
+          opacity: l.opacity, blend: l.blend, canvas: l.canvas, alphaLock: l.alphaLock, clip: l.clip,
         })),
       };
     },
@@ -123,11 +125,19 @@
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, c.width, c.height);
       }
+      let base = null;
       for (const l of this.layers) {
+        if (!l.clip) base = l;
         if (!l.visible) continue;
         ctx.globalAlpha = l.opacity;
         ctx.globalCompositeOperation = l.blend;
-        ctx.drawImage(l.canvas, 0, 0);
+        if (l.clip && base && base !== l) {
+          const t = PP.cloneCanvas(l.canvas);
+          const tx = t.getContext('2d');
+          tx.globalCompositeOperation = 'destination-in';
+          tx.drawImage(base.canvas, 0, 0);
+          ctx.drawImage(t, 0, 0);
+        } else ctx.drawImage(l.canvas, 0, 0);
       }
       return c;
     },

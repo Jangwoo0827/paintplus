@@ -310,3 +310,12 @@ html { background: var(--bg); }
 .set-nh { display: flex; gap: 10px; align-items: baseline; margin-top: 6px; }
 .set-notes ul { margin: 4px 0 8px; padding-left: 20px; }
 .set-notes li { margin: 2px 0; }
+
+/* ---------- 화면 반전 / 참고 이미지 창 ---------- */
+#stage.flip #view, #stage.flip #overlay { transform: scaleX(-1); }
+.ref-win { position: fixed; z-index: 120; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); resize: both; overflow: hidden; min-width: 140px; min-height: 100px; display: flex; flex-direction: column; }
+.ref-bar { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: var(--panel2); cursor: move; font-size: 12px; flex: none; }
+.ref-bar span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ref-bar input[type=range] { width: 70px; }
+.ref-bar button { border: 0; background: transparent; cursor: pointer; font-size: 14px; }
+.ref-win img { flex: 1; min-height: 0; object-fit: contain; width: 100%; background: #222; }

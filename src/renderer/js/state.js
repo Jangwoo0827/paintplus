@@ -5,7 +5,7 @@
 
   const TOOL_DEFAULTS = {
     pencil: { size: 2, opacity: 100, smoothing: 0, pressure: true },
-    brush: { size: 24, opacity: 100, hardness: 50, spacing: 12, smoothing: 30, pressure: true, type: 'soft' },
+    brush: { size: 24, opacity: 100, hardness: 50, spacing: 12, smoothing: 30, pressure: true, type: 'soft', jitter: 0, velocity: 0, tilt: 0, colorJitter: 0 },
     eraser: { size: 30, opacity: 100, hardness: 80, spacing: 10, smoothing: 20, pressure: true },
     fill: { tolerance: 32, opacity: 100, expand: 1, allLayers: false },
     gradient: { gradType: 'linear', gradColors: 'fg-bg', opacity: 100 },
@@ -22,6 +22,8 @@
     selrect: {},
     sellasso: {},
     smudge: { size: 30, strength: 60, hardness: 60, spacing: 8, smoothing: 10, pressure: false },
+    oil: { size: 40, strength: 70, hardness: 70, spacing: 8, smoothing: 10, pressure: false },
+    liquify: { size: 90, strength: 60, hardness: 100, spacing: 4, smoothing: 0, pressure: false, mode: 'push' },
     blurbrush: { size: 40, strength: 60, hardness: 60, spacing: 10, smoothing: 10, pressure: true },
     sharpbrush: { size: 40, strength: 60, hardness: 60, spacing: 10, smoothing: 10, pressure: true },
     dodge: { size: 50, strength: 30, hardness: 30, spacing: 10, smoothing: 10, pressure: true },

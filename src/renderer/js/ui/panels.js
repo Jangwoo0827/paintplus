@@ -41,8 +41,12 @@
       thumbs.set(l.id, thumb);
       const eye = PP.el('button', { class: 'ibtn' + (l.visible ? ' on' : ''), html: l.visible ? ICON.eye : ICON.eyeOff, title: l.visible ? '숨기기' : '보이기' });
       const lock = PP.el('button', { class: 'ibtn' + (l.locked ? ' on' : ''), html: l.locked ? ICON.lock : ICON.unlock, title: l.locked ? '잠금 해제' : '잠그기' });
+      const alock = PP.el('button', { class: 'ibtn' + (l.alphaLock ? ' on' : ''), text: '▨', title: '투명 픽셀 잠금 (이미 칠한 곳에만 그리기)' });
+      const clipB = PP.el('button', { class: 'ibtn' + (l.clip ? ' on' : ''), text: '⤵', title: '클리핑 마스크 (아래 레이어 영역 안에서만 보이기)' });
+      alock.addEventListener('click', (e) => { e.stopPropagation(); PP.layers.setProp(l.id, 'alphaLock', !l.alphaLock, '투명도 잠금'); });
+      clipB.addEventListener('click', (e) => { e.stopPropagation(); PP.layers.setProp(l.id, 'clip', !l.clip, '클리핑 마스크'); });
       const name = PP.el('span', { class: 'lname', text: l.name, title: '더블클릭하여 이름 변경' });
-      const row = PP.el('div', { class: 'layer-row' + (l.id === d.activeId ? ' active' : '') + (l.visible ? '' : ' hidden'), draggable: 'true', 'data-id': l.id }, eye, thumb, name, lock);
+      const row = PP.el('div', { class: 'layer-row' + (l.id === d.activeId ? ' active' : '') + (l.visible ? '' : ' hidden'), draggable: 'true', 'data-id': l.id }, eye, thumb, name, clipB, alock, lock);
       eye.addEventListener('click', (e) => { e.stopPropagation(); PP.layers.setProp(l.id, 'visible', !l.visible, l.visible ? '레이어 숨기기' : '레이어 보이기'); });
       lock.addEventListener('click', (e) => { e.stopPropagation(); PP.layers.setProp(l.id, 'locked', !l.locked, l.locked ? '레이어 잠금 해제' : '레이어 잠금'); });
       row.addEventListener('click', () => PP.layers.setActive(l.id));

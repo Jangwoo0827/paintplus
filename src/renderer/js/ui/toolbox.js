@@ -13,6 +13,8 @@
     ['gradient', '그라디언트', 'Shift+G', I('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 16l10-8" stroke-dasharray="2 2.5"/>')],
     ['picker', '스포이드', 'I', I('<path d="M14 7l3 3"/><path d="M16 4l4 4-3 3-4-4z"/><path d="M13 8L5 16v3h3l8-8"/>')],
     ['smudge', '손가락(번지기)', 'S', I('<path d="M7 20c-2-1-2-4 0-6l5-8a2 2 0 0 1 3 2l-2 4 4-1a2 2 0 0 1 1 3l-3 6c-1 2-5 3-8 0z"/>')],
+    ['oil', '유화/아크릴(색 섞기)', 'Shift+O', I('<path d="M4 20c0-4 3-6 6-8l8-8 2 2-8 8c-2 3-4 6-8 6z"/><path d="M14 6l4 4"/>')],
+    ['liquify', '픽셀 유동화', 'Shift+L', I('<path d="M4 12c3-6 5 6 8 0s5 6 8 0"/><path d="M4 17c3-6 5 6 8 0s5 6 8 0"/>')],
     ['blurbrush', '흐림 브러시', 'Shift+B', I('<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="2 3"/>')],
     ['sharpbrush', '선명 브러시', 'Shift+S', I('<path d="M12 4l8 14H4z"/><path d="M12 9l3.5 6h-7z"/>')],
     ['dodge', '닷지(밝게)', 'Shift+D', I('<circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M5.6 18.4l2-2M16.4 7.6l2-2"/>')],
@@ -79,11 +81,16 @@
     hardness: { type: 'range', label: '경도', min: 0, max: 100, unit: '%' },
     spacing: { type: 'range', label: '간격', min: 1, max: 200, unit: '%' },
     smoothing: { type: 'range', label: '손떨림 보정', min: 0, max: 100, unit: '%' },
+    jitter: { type: 'range', label: '크기 지터', min: 0, max: 100, unit: '%' },
+    velocity: { type: 'range', label: '속도 감응', min: 0, max: 100, unit: '%' },
+    tilt: { type: 'range', label: '기울기 감응', min: 0, max: 100, unit: '%' },
+    colorJitter: { type: 'range', label: '색 변화', min: 0, max: 100, unit: '%' },
     pressure: { type: 'check', label: '필압' },
     type: { type: 'select', label: '브러시', items: () => PP.BRUSH_TYPES, preset: true },
     tolerance: { type: 'range', label: '허용 오차', min: 0, max: 255, unit: '' },
     expand: { type: 'range', label: '경계 확장', min: 0, max: 8, unit: 'px' },
     allLayers: { type: 'check', label: '모든 레이어 참조' },
+    mode: { type: 'select', label: '모드', items: () => [['push', '밀기'], ['bloat', '부풀리기'], ['pinch', '오므리기'], ['twirl', '비틀기']] },
     strength: { type: 'range', label: '강도', min: 1, max: 100, unit: '%' },
     contiguous: { type: 'check', label: '연결된 영역만' },
     gradType: { type: 'select', label: '모양', items: () => [['linear', '선형'], ['radial', '방사형'], ['reflected', '반사형'], ['angular', '각도형']] },
@@ -99,7 +106,7 @@
   };
   const TOOL_OPTIONS = {
     pencil: ['size', 'opacity', 'smoothing', 'pressure', '@sym'],
-    brush: ['type', 'size', 'opacity', 'hardness', 'spacing', 'smoothing', 'pressure', '@sym'],
+    brush: ['type', 'size', 'opacity', 'hardness', 'spacing', 'smoothing', 'pressure', 'jitter', 'velocity', 'tilt', 'colorJitter', '@sym'],
     eraser: ['size', 'opacity', 'hardness', 'smoothing', 'pressure', '@sym'],
     fill: ['tolerance', 'expand', 'opacity', 'allLayers'],
     gradient: ['gradType', 'gradColors', 'opacity'],
@@ -114,6 +121,8 @@
     curve: ['lineWidth', 'opacity', '@ops'],
     text: ['fontFamily', 'fontSize', 'bold', 'italic', 'opacity', '@ops'],
     smudge: ['size', 'strength', 'hardness', 'smoothing'],
+    oil: ['size', 'strength', 'hardness', 'smoothing'],
+    liquify: ['mode', 'size', 'strength'],
     blurbrush: ['size', 'strength', 'hardness', 'pressure', '@sym'],
     sharpbrush: ['size', 'strength', 'hardness', 'pressure', '@sym'],
     dodge: ['size', 'strength', 'hardness', 'pressure', '@sym'],
@@ -188,7 +197,7 @@
       s.addEventListener('change', () => {
         set(s.value);
         if (d.preset && PP.BRUSH_PRESETS[s.value]) {
-          Object.assign(o, PP.BRUSH_PRESETS[s.value]);
+          Object.assign(o, { jitter: 0, velocity: 0, tilt: 0, colorJitter: 0, smoothing: 20, pressure: true }, PP.BRUSH_PRESETS[s.value]);
           buildOptions();
         }
       });

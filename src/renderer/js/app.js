@@ -26,6 +26,7 @@
     PP.ui.initStatusbar();
     PP.ui.initMenu();
     PP.initPanels && PP.initPanels();
+    PP.ui.initExtras && PP.ui.initExtras();
 
     PP.on('history', updateTitle);
     PP.on('doc:new', updateTitle);

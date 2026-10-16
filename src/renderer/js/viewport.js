@@ -105,11 +105,12 @@
   V.toDoc = (sx, sy) => ({ x: (sx - V.ox) / V.zoom, y: (sy - V.oy) / V.zoom });
   V.clientToDoc = function (cx, cy) {
     const r = overlay.getBoundingClientRect();
-    return V.toDoc(cx - r.left, cy - r.top);
+    return V.toDoc(V.flipped ? r.width - (cx - r.left) : cx - r.left, cy - r.top);
   };
   V.docToClient = function (x, y) {
     const r = overlay.getBoundingClientRect();
-    return { x: r.left + V.ox + x * V.zoom, y: r.top + V.oy + y * V.zoom };
+    const sx = V.ox + x * V.zoom;
+    return { x: r.left + (V.flipped ? r.width - sx : sx), y: r.top + V.oy + y * V.zoom };
   };
   V.visibleDocRect = function () {
     const a = V.toDoc(0, 0), b = V.toDoc(V.w, V.h);
@@ -175,7 +176,7 @@
   // ---------- 포인터 입력 ----------
   function makePt(e, forceSnap) {
     const r = overlay.getBoundingClientRect();
-    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const sx = V.flipped ? r.width - (e.clientX - r.left) : e.clientX - r.left, sy = e.clientY - r.top;
     let x = (sx - V.ox) / V.zoom, y = (sy - V.oy) / V.zoom;
     const t = PP.tools[PP.state.tool];
     if (PP.state.grid.snap && (forceSnap || (t && t.snap))) {
@@ -191,6 +192,7 @@
       shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey, alt: e.altKey,
       button: e.button, buttons: e.buttons,
       time: e.timeStamp,
+      tilt: Math.min(1, Math.hypot(e.tiltX || 0, e.tiltY || 0) / 90),
     };
   }
   V.makePt = makePt;
@@ -210,10 +212,11 @@
   function startPinch() {
     V.cancelGesture();
     const p = pinchPoints();
-    pinch = { d0: p.d, cx0: p.cx, cy0: p.cy, z0: V.zoom, ox0: V.ox, oy0: V.oy };
+    pinch = { d0: p.d, cx0: p.cx, cy0: p.cy, z0: V.zoom, ox0: V.ox, oy0: V.oy, t0: Date.now(), moved: false, max: 2 };
   }
   function updatePinch() {
     const p = pinchPoints();
+    if (Math.abs(p.d - pinch.d0) > 14 || Math.hypot(p.cx - pinch.cx0, p.cy - pinch.cy0) > 14) pinch.moved = true;
     const z = PP.clamp(pinch.z0 * (p.d / pinch.d0), MIN_ZOOM, MAX_ZOOM);
     const dx = (pinch.cx0 - pinch.ox0) / pinch.z0, dy = (pinch.cy0 - pinch.oy0) / pinch.z0;
     V.zoom = z;
@@ -228,7 +231,8 @@
     if (e.pointerType === 'touch') {
       touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (touches.size === 2) { e.preventDefault(); try { overlay.setPointerCapture(e.pointerId); } catch (_) { /* 합성 이벤트 */ } startPinch(); return; }
-      if (touches.size > 2 || pinch) return;
+      if (touches.size > 2) { if (pinch) { pinch.max = Math.max(pinch.max, touches.size); } return; }
+      if (pinch) return;
     }
     if (activeTool || panState) return;
     if (PP.ui.isModalOpen && PP.ui.isModalOpen()) return;
@@ -284,7 +288,14 @@
   function onUp(e) {
     if (e.pointerType === 'touch') {
       touches.delete(e.pointerId);
-      if (pinch) { if (touches.size === 0) pinch = null; return; }
+      if (pinch) {
+        if (touches.size === 0) {
+          // 짧게 톡: 두 손가락 = 실행 취소, 세 손가락 = 다시 실행
+          if (!pinch.moved && Date.now() - pinch.t0 < 320) PP.runCmd(pinch.max >= 3 ? 'edit.redo' : 'edit.undo');
+          pinch = null;
+        }
+        return;
+      }
     }
     if (panState) {
       panState = null;
@@ -381,7 +392,9 @@
       const sc = zoom * dpr;
       cctx.imageSmoothingEnabled = sc < 2 && sc !== 1;
       cctx.imageSmoothingQuality = 'high';
+      let clipBase = null;
       for (const l of d.layers) {
+        if (!l.clip) clipBase = l;
         if (!l.visible) continue;
         if (PP.preview.active && PP.preview.layer === l) {
           // 그리는 중인 레이어: 뷰포트 크기 임시 캔버스에서 (레이어 + 스트로크)를 먼저 합성
@@ -414,12 +427,25 @@
             strokeSrc = tmp2; ssx = 0; ssy = 0; ssw = tmp2.width; ssh = tmp2.height; sdx = 0; sdy = 0; sdw = tmp2.width; sdh = tmp2.height;
           }
           tctx.globalAlpha = P.opacity;
-          tctx.globalCompositeOperation = P.erase ? 'destination-out' : 'source-over';
+          tctx.globalCompositeOperation = P.erase ? 'destination-out' : (l.alphaLock ? 'source-atop' : (P.blend || 'source-over'));
           tctx.drawImage(strokeSrc, ssx, ssy, ssw, ssh, sdx, sdy, sdw, sdh);
           tctx.restore();
           cctx.globalAlpha = l.opacity;
           cctx.globalCompositeOperation = l.blend;
           cctx.drawImage(tmp, 0, 0);
+        } else if (l.clip && clipBase && clipBase !== l) {
+          // clipping mask: visible only inside the layer below
+          t2ctx.setTransform(1, 0, 0, 1, 0, 0);
+          t2ctx.globalAlpha = 1;
+          t2ctx.globalCompositeOperation = 'source-over';
+          t2ctx.clearRect(0, 0, tmp2.width, tmp2.height);
+          t2ctx.imageSmoothingEnabled = cctx.imageSmoothingEnabled;
+          t2ctx.drawImage(l.canvas, sx0, sy0, sw, sh, dx, dy, dW, dH);
+          t2ctx.globalCompositeOperation = 'destination-in';
+          t2ctx.drawImage(clipBase.canvas, sx0, sy0, sw, sh, dx, dy, dW, dH);
+          cctx.globalAlpha = l.opacity;
+          cctx.globalCompositeOperation = l.blend;
+          cctx.drawImage(tmp2, 0, 0);
         } else {
           cctx.globalAlpha = l.opacity;
           cctx.globalCompositeOperation = l.blend;

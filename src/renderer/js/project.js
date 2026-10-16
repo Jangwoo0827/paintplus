@@ -15,7 +15,7 @@
         width: d.width, height: d.height,
         activeIndex: d.indexOf(d.activeId),
         layers: d.layers.map((l) => ({
-          name: l.name, visible: l.visible, locked: l.locked, opacity: l.opacity, blend: l.blend,
+          name: l.name, visible: l.visible, locked: l.locked, opacity: l.opacity, blend: l.blend, alphaLock: !!l.alphaLock, clip: !!l.clip,
           data: l.canvas.toDataURL('image/png'),
         })),
       };
@@ -34,7 +34,7 @@
         c.getContext('2d').drawImage(img, 0, 0);
         layers.push(new PP.Layer(w, h, ld.name || '레이어', {
           canvas: c, visible: ld.visible !== false, locked: !!ld.locked,
-          opacity: typeof ld.opacity === 'number' ? PP.clamp(ld.opacity, 0, 1) : 1, blend: ld.blend || 'source-over',
+          opacity: typeof ld.opacity === 'number' ? PP.clamp(ld.opacity, 0, 1) : 1, blend: ld.blend || 'source-over', alphaLock: !!ld.alphaLock, clip: !!ld.clip,
         }));
       }
       PP.doc.initFromLayers(w, h, layers, j.activeIndex | 0, name, opts.recovered ? null : path, opts.recovered ? null : 'paintplus');

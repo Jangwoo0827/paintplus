@@ -51,7 +51,7 @@
 
   // 도구 단축키 (수정키 없음)
   const TOOL_KEYS = {
-    S: 'smudge', 'Shift+B': 'blurbrush', 'Shift+S': 'sharpbrush', 'Shift+D': 'dodge', 'Shift+E': 'burn', K: 'clone',
+    'Shift+O': 'oil', 'Shift+L': 'liquify', S: 'smudge', 'Shift+B': 'blurbrush', 'Shift+S': 'sharpbrush', 'Shift+D': 'dodge', 'Shift+E': 'burn', K: 'clone',
     M: 'wand', P: 'pencil', B: 'brush', E: 'eraser', G: 'fill', 'Shift+G': 'gradient', I: 'picker',
     L: 'line', R: 'rect', 'Shift+R': 'roundrect', O: 'ellipse', Y: 'triangle', N: 'polygon', W: 'arrow', C: 'curve',
     T: 'text', V: 'selrect', 'Shift+V': 'sellasso', H: 'hand', Z: 'zoom',

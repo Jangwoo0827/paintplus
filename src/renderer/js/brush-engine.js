@@ -37,6 +37,58 @@
 
   PP.softStamp = softStamp;
 
+  // color dynamics: pre-make a few hue/value variants around the base color
+  function makeShades(hex, amt) {
+    const c = PP.hexToRgb(hex) || { r: 0, g: 0, b: 0 };
+    const h = PP.rgbToHsv(c.r, c.g, c.b);
+    const out = [];
+    for (let i = 0; i < 9; i++) {
+      const hh = (h.h + (Math.random() - 0.5) * 120 * amt + 360) % 360;
+      const s = PP.clamp(h.s + (Math.random() - 0.5) * 0.5 * amt, 0, 1);
+      const v = PP.clamp(h.v + (Math.random() - 0.5) * 0.5 * amt, 0.05, 1);
+      const r = PP.hsvToRgb(hh, s, v);
+      out.push(PP.rgbToHex(r.r, r.g, r.b));
+    }
+    return out;
+  }
+  const waterCache = new Map();
+  function waterStamp(d, color) {
+    const key = d + color;
+    let c = waterCache.get(key);
+    if (c) return c;
+    c = PP.makeCanvas(d + 2, d + 2);
+    const x = c.getContext('2d'), r = d / 2, m = r + 1;
+    const g = x.createRadialGradient(m, m, 0, m, m, r);
+    g.addColorStop(0, PP.rgba(color, 0.12));
+    g.addColorStop(0.72, PP.rgba(color, 0.2));
+    g.addColorStop(0.92, PP.rgba(color, 0.42)); // darker edge bleed
+    g.addColorStop(1, PP.rgba(color, 0));
+    x.fillStyle = g;
+    x.fillRect(0, 0, d + 2, d + 2);
+    const id = x.getImageData(0, 0, d + 2, d + 2); // paper grain
+    for (let i = 3; i < id.data.length; i += 4) id.data[i] *= 0.7 + Math.random() * 0.3;
+    x.putImageData(id, 0, 0);
+    if (waterCache.size > 60) waterCache.delete(waterCache.keys().next().value);
+    waterCache.set(key, c);
+    return c;
+  }
+  function glowStamp(d, color) {
+    const key = 'g' + d + color;
+    let c = waterCache.get(key);
+    if (c) return c;
+    c = PP.makeCanvas(d + 2, d + 2);
+    const x = c.getContext('2d'), r = d / 2, m = r + 1;
+    const g = x.createRadialGradient(m, m, 0, m, m, r);
+    g.addColorStop(0, 'rgba(255,255,255,0.9)');
+    g.addColorStop(0.25, PP.rgba(color, 0.9));
+    g.addColorStop(0.6, PP.rgba(color, 0.25));
+    g.addColorStop(1, PP.rgba(color, 0));
+    x.fillStyle = g;
+    x.fillRect(0, 0, d + 2, d + 2);
+    waterCache.set(key, c);
+    return c;
+  }
+
   function pixelDisc(ctx, cx, cy, d) {
     if (d > 64) {
       ctx.beginPath(); ctx.arc(cx, cy, d / 2, 0, Math.PI * 2); ctx.fill();
@@ -53,8 +105,11 @@
   }
 
   let crayonTileKey = '', crayonTile = null;
-  function crayonPattern(ctx, color) {
-    if (crayonTileKey !== color) {
+  const GRAIN = { crayon: [0.32, 0.5], chalk: [0.38, 0.62], charcoal: [0.52, 0.72], pastel: [0.2, 0.4], gouache: [0.1, 0.2] };
+  function crayonPattern(ctx, color, variant = 'crayon') {
+    const key = color + '|' + variant;
+    const [holes, half] = GRAIN[variant] || GRAIN.crayon;
+    if (crayonTileKey !== key) {
       const c = PP.makeCanvas(128, 128);
       const x = c.getContext('2d');
       const id = x.createImageData(128, 128);
@@ -62,11 +117,11 @@
       for (let i = 0; i < id.data.length; i += 4) {
         const n = Math.random();
         id.data[i] = rgb.r; id.data[i + 1] = rgb.g; id.data[i + 2] = rgb.b;
-        id.data[i + 3] = n < 0.32 ? 0 : n < 0.5 ? 120 : 255;
+        id.data[i + 3] = n < holes ? 0 : n < half ? 120 : 255;
       }
       x.putImageData(id, 0, 0);
       crayonTile = c;
-      crayonTileKey = color;
+      crayonTileKey = key;
     }
     return ctx.createPattern(crayonTile, 'repeat');
   }
@@ -90,12 +145,24 @@
       this.acc = 0;
       this.target = null;
       if (this.type === 'bristle') this.initBristles();
-      if (this.type === 'crayon') this.pattern = crayonPattern(this.ctx, this.color);
+      if (GRAIN[this.type]) this.pattern = crayonPattern(this.ctx, this.color, this.type);
+      // dynamics: jitter / velocity / tilt / color variation
+      this.jitter = (o.jitter || 0) / 100;
+      this.velSens = (o.velocity || 0) / 100;
+      this.tiltSens = (o.tilt || 0) / 100;
+      this.speedF = 1; this.tiltF = 1; this.lastRaw = null; this.dir = 0;
+      this.shades = null;
+      if ((o.colorJitter || 0) > 0) this.shades = makeShades(this.color, o.colorJitter / 100);
     }
 
     pf(p) { return this.usePressure ? 0.12 + 0.88 * p : 1; }
     alphaF(p) { return this.usePressure ? 0.25 + 0.75 * p : 1; }
-    sizeAt(p) { return Math.max(1, this.size * this.pf(p)); }
+    sizeAt(p) {
+      let s = this.size * this.pf(p) * this.speedF * this.tiltF;
+      if (this.jitter) s *= 1 - this.jitter * Math.random() * 0.7;
+      return Math.max(1, s);
+    }
+    col() { return this.shades ? this.shades[(Math.random() * this.shades.length) | 0] : this.color; }
     stepFor(p) { return Math.max(this.type === 'spray' ? 1.5 : 0.75, this.sizeAt(p) * this.spacing); }
 
     start(pt) {
@@ -107,6 +174,14 @@
 
     move(pt) {
       this.target = { x: pt.x, y: pt.y, p: pt.pressure || (pt.pen ? 0.02 : 1) };
+      if (this.lastRaw && pt.time) {
+        const dt = Math.max(1, pt.time - this.lastRaw.t);
+        const sp = Math.hypot(pt.x - this.lastRaw.x, pt.y - this.lastRaw.y) / dt; // px/ms
+        const f = PP.clamp(1 - this.velSens * (sp / 2.5), 0.25, 1);
+        this.speedF += (f - this.speedF) * 0.3;
+      }
+      this.lastRaw = { x: pt.x, y: pt.y, t: pt.time || 0 };
+      this.tiltF = 1 + this.tiltSens * (pt.tilt || 0) * 1.5;
       const k = this.k;
       const np = {
         x: this.pos.x + (pt.x - this.pos.x) * (1 - k),
@@ -143,6 +218,7 @@
       const dx = b.x - a.x, dy = b.y - a.y;
       const dist = Math.hypot(dx, dy);
       if (dist < 1e-6) return;
+      this.dir = Math.atan2(dy, dx);
       if (this.type === 'bristle') { this.bristleSeg(a, b); return; }
       let pos = 0;
       let step = this.stepFor((a.p + b.p) / 2);
@@ -194,7 +270,7 @@
         }
         case 'soft': {
           const d = Math.max(1, Math.round(size));
-          const st = softStamp(d, this.hardness, this.color);
+          const st = softStamp(d, this.hardness, this.col());
           ctx.globalAlpha = this.alphaF(p);
           ctx.drawImage(st, x - st.width / 2, y - st.height / 2);
           ctx.globalAlpha = 1;
@@ -232,6 +308,66 @@
           ctx.arc(x, y, size / 2, 0, Math.PI * 2);
           ctx.fill();
           ctx.globalAlpha = 1;
+          break;
+        }
+        case 'airbrush': {
+          const d = Math.max(1, Math.round(size));
+          const st = softStamp(d, 0, this.col());
+          ctx.globalAlpha = 0.08 * this.alphaF(p);
+          ctx.drawImage(st, x - st.width / 2, y - st.height / 2);
+          ctx.globalAlpha = 1;
+          break;
+        }
+        case 'ink': {
+          const d = Math.max(1, Math.round(size));
+          const st = softStamp(d, 1, this.col());
+          ctx.drawImage(st, x - st.width / 2, y - st.height / 2);
+          break;
+        }
+        case 'watercolor': {
+          const d = Math.max(2, Math.round(size));
+          const st = waterStamp(d, this.col());
+          ctx.globalAlpha = 0.55 * this.alphaF(p);
+          ctx.drawImage(st, x - st.width / 2, y - st.height / 2);
+          ctx.globalAlpha = 1;
+          break;
+        }
+        case 'chalk': case 'charcoal': case 'pastel': case 'gouache': {
+          ctx.fillStyle = this.pattern;
+          ctx.globalAlpha = (this.type === 'gouache' ? 0.95 : 0.9) * this.alphaF(p);
+          ctx.beginPath();
+          ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          break;
+        }
+        case 'glow': {
+          const d = Math.max(2, Math.round(size));
+          const st = glowStamp(d, this.col());
+          ctx.globalAlpha = this.alphaF(p);
+          ctx.drawImage(st, x - st.width / 2, y - st.height / 2);
+          ctx.globalAlpha = 1;
+          break;
+        }
+        case 'pixel': {
+          const n = Math.max(1, Math.round(this.size));
+          ctx.fillStyle = this.col();
+          ctx.fillRect(Math.floor(x / n) * n, Math.floor(y / n) * n, n, n);
+          break;
+        }
+        case 'star': {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(this.dir + Math.PI / 2);
+          ctx.fillStyle = this.col();
+          ctx.beginPath();
+          for (let i = 0; i < 10; i++) {
+            const r = ((i % 2 ? 0.42 : 1) * size) / 2, a = (i * Math.PI) / 5 - Math.PI / 2;
+            ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
           break;
         }
         default:
