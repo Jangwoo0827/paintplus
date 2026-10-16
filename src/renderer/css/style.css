@@ -300,3 +300,13 @@ input[type='range'] { accent-color: var(--accent); height: 16px; }
 /* 초기화가 끝나기 전에는 UI를 숨겨 반쯤 만들어진 화면이 보이지 않게 함 */
 body:not([data-ready]) #app { visibility: hidden; }
 html { background: var(--bg); }
+
+/* ---------- 설정 창 ---------- */
+.set-h { font-weight: 600; color: var(--accent); margin-top: 6px; }
+.set-box { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.set-ver { font-size: 18px; font-weight: 600; }
+.set-dim { color: var(--text-dim); }
+.set-notes { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; user-select: text; }
+.set-nh { display: flex; gap: 10px; align-items: baseline; margin-top: 6px; }
+.set-notes ul { margin: 4px 0 8px; padding-left: 20px; }
+.set-notes li { margin: 2px 0; }

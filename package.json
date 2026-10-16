@@ -1,7 +1,7 @@
 {
   "name": "paintplus",
   "productName": "PaintPlus",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "그림판+ - 기본 그림판보다 훨씬 강력한 데스크톱 그림 프로그램",
   "main": "src/main/main.js",
   "author": "Jangwoo",

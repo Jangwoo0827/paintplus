@@ -62,7 +62,6 @@
       if (isManual) PP.ui.alert('업데이트를 확인하지 못했습니다.\n' + (e.message || e));
     }
   }
-  PP.APP_VERSION = PP.APP_VERSION || '1.1.0';
   if (PP.isNative) {
     PP.defCmd('help.update', '업데이트 확인...', '', () => check(true));
     setTimeout(() => check(false), 6000);

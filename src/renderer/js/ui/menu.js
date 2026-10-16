@@ -9,6 +9,7 @@
     ['이미지', ['img.canvasSize', 'img.resize', 'img.crop', '-', 'img.rotateCW', 'img.rotateCCW', 'img.rotate180', 'img.flipH', 'img.flipV']],
     ['레이어', ['layer.add', 'layer.dup', 'layer.del', '-', 'layer.up', 'layer.down', '-', 'layer.mergeDown', 'layer.flatten']],
     ['필터', ['filter.blur', 'filter.motion', 'filter.sharpen', '-', 'filter.brightness', 'filter.saturation', 'filter.hsl', 'filter.levels', 'filter.posterize', '-', 'filter.pixelate', 'filter.noise', 'filter.edge', 'filter.emboss', 'filter.vignette', '-', 'filter.gray', 'filter.invert', 'filter.sepia']],
+    ['설정', ['app.settings', 'help.update', 'view.theme']],
     ['도움말', ['help.shortcuts', 'help.update', 'help.about']],
   ];
   let bar, tops, openIdx = -1, drop = null;
