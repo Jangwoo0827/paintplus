@@ -110,6 +110,7 @@ app.whenReady().then(async () => {
   try {
     await js("new Promise(r=>{const f=()=>document.body.dataset.ready?r(1):setTimeout(f,30);f()})");
     await wait(200);
+    if (scenarioName !== 'three') await js('PP.hub && PP.hub.close()');
     console.log('시나리오:', scenarioName);
     await require(`./${scenarioName}.js`)(t);
   } catch (e) {

@@ -1,7 +1,7 @@
 {
   "name": "paintplus",
   "productName": "PaintPlus",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "그림판+ - 기본 그림판보다 훨씬 강력한 데스크톱 그림 프로그램",
   "main": "src/main/main.js",
   "author": "Jangwoo",
@@ -17,7 +17,8 @@
     "android:debug": "npm run android:sync && cd android && gradlew assembleDebug",
     "android:release": "npm run android:sync && cd android && gradlew assembleRelease",
     "serve": "node scripts/serve.js",
-    "test:web": "node test/web.js"
+    "test:web": "node test/web.js",
+    "vendor": "node scripts/vendor/build.js"
   },
   "devDependencies": {
     "@capacitor/android": "^7.6.9",
@@ -28,7 +29,9 @@
     "@capacitor/share": "^7.0.4",
     "electron": "^44.7.2",
     "electron-builder": "^26.15.3",
-    "playwright-core": "^1.64.1"
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.64.1",
+    "three": "^0.186.1"
   },
   "build": {
     "appId": "com.jangwoo.paintplus",

@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('api', {
   saveDialog: (o) => ipcRenderer.invoke('dialog:save', o),
   writeFile: (p, data) => ipcRenderer.invoke('file:write', p, data),
   readFile: (p) => ipcRenderer.invoke('file:read', p),
+  pickDir: () => ipcRenderer.invoke('dialog:dir'),
+  listDir: (d) => ipcRenderer.invoke('fs:listDir', d),
   readClipboardImage: () => ipcRenderer.invoke('clipboard:readImage'),
   writeClipboardImage: (dataUrl) => ipcRenderer.invoke('clipboard:writeImage', dataUrl),
   writeRecovery: (data) => ipcRenderer.invoke('recovery:write', data),

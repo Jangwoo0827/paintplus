@@ -140,7 +140,7 @@ module.exports = async function (t) {
   await wait(100);
   t.check(!(await js("!!document.querySelector('.menu-drop')")), 'Esc 로 메뉴 닫힘');
   const names = await js("[...document.querySelectorAll('.menu-top')].map(e=>e.textContent).join(',')");
-  t.check(names === '파일,편집,보기,이미지,레이어,필터,도움말', '메뉴바: ' + names);
+  t.check(names === '파일,편집,보기,이미지,레이어,필터,설정,도움말', '메뉴바: ' + names);
   await t.key('F1');
   await wait(200);
   t.check(await js("document.querySelector('.modal h3')?.textContent==='단축키'"), 'F1 단축키 도움말');

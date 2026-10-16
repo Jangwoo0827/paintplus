@@ -4,14 +4,15 @@
   const api = window.api;
 
   function updateTitle() {
-    const t = `${PP.history.isDirty() ? '● ' : ''}${PP.doc.name} - 그림판+`;
+    const a = PP.tabs && PP.tabs.active();
+    const t = a ? `${PP.tabs.dirtyOf(a) ? '● ' : ''}${PP.tabs.titleOf(a)} - 그림판+` : '그림판+';
     document.title = t;
     if (api) api.setTitle(t);
   }
 
   PP.requestClose = async function () {
     if (!api) return;
-    if (await PP.files.confirmDiscard()) api.closeNow();
+    if (await PP.tabs.confirmAll()) api.closeNow();
   };
 
   function init() {
@@ -27,10 +28,14 @@
     PP.ui.initMenu();
     PP.initPanels && PP.initPanels();
     PP.ui.initExtras && PP.ui.initExtras();
+    PP.tabs.init();
+    PP.hub.init();
+    PP.three.init();
 
     PP.on('history', updateTitle);
     PP.on('doc:new', updateTitle);
     PP.on('doc:meta', updateTitle);
+    PP.on('tabs:update', updateTitle);
 
     // 파일 드래그 & 드롭
     document.addEventListener('dragover', (e) => { e.preventDefault(); });
@@ -53,6 +58,8 @@
       });
     }
     PP.autosave && PP.autosave.start();
+    // 시작하면 허브를 먼저 보여 준다 (복구할 작업이 있으면 복구 확인이 우선)
+    if (!PP.store.get('noHubOnStart', false)) setTimeout(() => PP.hub.open(), 150);
     document.body.dataset.ready = '1';
   }
 

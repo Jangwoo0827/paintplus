@@ -31,6 +31,7 @@ async function runOne(browser, server, name) {
   await page.goto(`http://localhost:${port}/index.html`);
   await page.waitForFunction(() => document.body.dataset.ready === '1');
   await page.waitForTimeout(200);
+  if (name !== 'three') await page.evaluate(() => PP.hub && PP.hub.close());
 
   const results = [];
   const wait = (ms) => page.waitForTimeout(ms);
@@ -87,7 +88,7 @@ async function runOne(browser, server, name) {
 (async () => {
   if (!exe) { console.log('Edge/Chrome 을 찾을 수 없습니다'); process.exit(2); }
   const server = await start(0);
-  const browser = await chromium.launch({ executablePath: exe, headless: true, args: ['--enable-features=ClipboardAPI'] });
+  const browser = await chromium.launch({ executablePath: exe, headless: true, args: ['--enable-features=ClipboardAPI', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   let total = 0, failed = 0;
   for (const n of names) {
     const r = await runOne(browser, server, n);

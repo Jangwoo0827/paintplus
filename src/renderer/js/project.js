@@ -46,7 +46,7 @@
   let timer = null;
   const A = (PP.autosave = {
     async tick() {
-      if (!api || !PP.history.isDirty()) return;
+      if (!api || !PP.history.isDirty() || PP.tabs.is3d()) return;
       if (PP.vp.isDrawing() || PP.preview.active || PP.sel.float || PP.pendingActive()) return;
       const key = PP.history.index + ':' + PP.history.stack.length;
       if (key === A.lastKey) return;

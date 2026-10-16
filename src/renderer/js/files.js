@@ -60,15 +60,13 @@
     },
 
     async newDoc() {
-      if (!(await F.confirmDiscard())) return;
       const o = await PP.ui.newDocDialog();
       if (!o) return;
       const bg = o.bg === 'white' ? '#ffffff' : o.bg === 'transparent' ? null : o.bg === 'bg' ? PP.state.bg : PP.state.fg;
-      PP.doc.init(o.w, o.h, bg);
+      PP.tabs.new2d(o.w, o.h, bg);
     },
 
     async open() {
-      if (!(await F.confirmDiscard())) return;
       if (!api) {
         const f = await PP.platform.pickFile();
         if (f) await F.openFile(f);
@@ -77,7 +75,7 @@
       const files = await api.openDialog({
         title: '열기',
         filters: [
-          { name: '그림판+ 지원 파일', extensions: [...IMG_EXTS, 'paintplus'] },
+          { name: '그림판+ 지원 파일', extensions: [...IMG_EXTS, 'paintplus', 'pp3d', 'glb', 'gltf', 'obj', 'stl'] },
           { name: '이미지 (PNG, JPG, WebP, BMP)', extensions: IMG_EXTS },
           { name: '그림판+ 프로젝트', extensions: ['paintplus'] },
           { name: '모든 파일', extensions: ['*'] },
@@ -90,6 +88,8 @@
     async openFile(f) {
       const ext = extOf(f.name);
       try {
+        if (['pp3d', 'glb', 'gltf', 'obj', 'stl'].includes(ext)) { await F.open3d(f); return; }
+        PP.tabs.prepare2d();
         if (ext === 'paintplus') {
           await PP.project.load(f.data, f.name, f.path);
         } else {
@@ -98,6 +98,7 @@
           bmp.close && bmp.close();
         }
         api && api.clearRecovery();
+        if (f.path && PP.hub) PP.addRecentFile(f.path, f.name, '2d', PP.thumb2d());
       } catch (err) {
         console.error(err);
         PP.ui.alert('파일을 열 수 없습니다.\n' + (err.message || err));
@@ -106,7 +107,6 @@
 
     async openPath(p) {
       if (!api) return;
-      if (!(await F.confirmDiscard())) return;
       try {
         await F.openFile(await api.readFile(p));
       } catch (err) {
@@ -117,8 +117,7 @@
     /** 드래그&드롭 File */
     async openDropped(file) {
       const ext = extOf(file.name);
-      if (!IMG_EXTS.includes(ext) && ext !== 'paintplus') { PP.toast('지원하지 않는 파일 형식입니다'); return; }
-      if (!(await F.confirmDiscard())) return;
+      if (![...IMG_EXTS, 'paintplus', 'pp3d', 'glb', 'gltf', 'obj', 'stl'].includes(ext)) { PP.toast('지원하지 않는 파일 형식입니다'); return; }
       const data = new Uint8Array(await file.arrayBuffer());
       await F.openFile({ name: file.name, path: api ? api.pathForFile(file) : '', data });
     },
@@ -135,11 +134,13 @@
     },
 
     async save() {
+      if (PP.tabs.is3d()) return F.save3d(false);
       if (!PP.doc.path || !PP.doc.fileType) return F.saveAs();
       return F.writeTo(PP.doc.path, PP.doc.fileType);
     },
 
     async saveAs() {
+      if (PP.tabs.is3d()) return F.save3d(true);
       PP.sel.finish();
       const t = PP.doc.fileType;
       const all = [
@@ -178,6 +179,7 @@
         PP.history.markSaved();
         api.clearRecovery();
         PP.emit('doc:meta');
+        if (PP.hub) PP.addRecentFile(path, PP.doc.name, '2d', PP.thumb2d());
         PP.toast('저장했습니다: ' + PP.doc.name);
         return true;
       } catch (err) {
@@ -215,5 +217,57 @@
       }
     },
   });
+
+  // ---------- 3D 파일 ----------
+  F.openPathAny = async function (p) {
+    if (!api) return;
+    const f = await api.readFile(p);
+    await F.openFile(f);
+  };
+  F.open3d = async function (f) {
+    const ext = extOf(f.name);
+    if (ext === 'pp3d') {
+      const s = PP.Scene3D.fromBytes(f.data, f.name);
+      s.path = f.path || null;
+      PP.tabs.new3d(s);
+      if (f.path) PP.addRecentFile(f.path, f.name, '3d', PP.three.thumbnail());
+      return;
+    }
+    // glb/gltf/obj/stl: 현재 3D 탭에 객체로 추가 (3D 탭이 아니면 새 3D 탭)
+    if (!PP.tabs.is3d()) { const s = new PP.Scene3D(); s.resetHistory(); PP.tabs.new3d(s); }
+    await PP.three.importModel(f.name, f.data);
+  };
+  F.importModel = async function () {
+    const f = api
+      ? (await api.openDialog({ title: '3D 모델 가져오기', filters: [{ name: '3D 모델', extensions: ['glb', 'gltf', 'obj', 'stl'] }] }))[0]
+      : await PP.platform.pickFile('.glb,.gltf,.obj,.stl');
+    if (f) await F.open3d(f);
+  };
+  F.save3d = async function (as) {
+    const s = PP.three.scene;
+    if (!s) return false;
+    let path = s.path;
+    const bytes = s.serialize();
+    if (!api) {
+      const name = (s.name.replace(/\.[^.]+$/, '') || 'model') + '.pp3d';
+      await PP.platform.saveBytes(name, bytes, 'application/json');
+      s.name = name; s.savedIndex = s.index; PP.emit('tabs:update');
+      return true;
+    }
+    if (!path || as) {
+      path = await api.saveDialog({ title: '3D 저장', defaultPath: path || s.name.replace(/\.[^.]+$/, '') + '.pp3d', filters: [{ name: '그림판+ 3D', extensions: ['pp3d'] }] });
+      if (!path) return false;
+      if (!/\.pp3d$/i.test(path)) path += '.pp3d';
+    }
+    await api.writeFile(path, bytes);
+    s.path = path;
+    s.name = path.split(/[\\/]/).pop();
+    s.savedIndex = s.index;
+    PP.addRecentFile(path, s.name, '3d', PP.three.thumbnail());
+    PP.emit('tabs:update');
+    PP.toast('저장했습니다: ' + s.name);
+    return true;
+  };
+
   PP.defCmd('file.import', '이미지를 레이어로 가져오기...', '', () => F.importAsLayer());
 })(window.PP);

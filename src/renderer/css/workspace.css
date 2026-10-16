@@ -1,0 +1,80 @@
+/* ---------- 탭 바 ---------- */
+#tabbar { display: flex; align-items: stretch; background: var(--bg); border-bottom: 1px solid var(--border); height: 32px; flex: none; }
+.tab-list { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tab-list::-webkit-scrollbar { display: none; }
+.tab { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 10px; min-width: 120px; max-width: 220px; border-right: 1px solid var(--border); color: var(--text-dim); cursor: default; flex: none; }
+.tab:hover { background: var(--hover); }
+.tab.active { background: var(--panel); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.tab-k { font-size: 10px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: var(--active); color: var(--text); }
+.tab-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-x, .tab-home, .tab-add { border: 0; background: transparent; color: var(--text-dim); cursor: pointer; padding: 0 8px; font-size: 14px; }
+.tab-x:hover, .tab-home:hover, .tab-add:hover { color: var(--text); background: var(--hover); }
+.tab-home { font-size: 17px; width: 36px; }
+.tab-add { font-size: 18px; width: 34px; }
+
+/* ---------- 허브 ---------- */
+#hub { position: fixed; inset: 0; z-index: 250; background: var(--bg); display: flex; }
+#hub[hidden] { display: none; }
+.hub-side { width: 260px; flex: none; background: var(--panel); border-right: 1px solid var(--border); padding: 18px 14px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+.hub-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 16px; }
+.hub-logo img { width: 40px; height: 40px; border-radius: 10px; }
+.hub-h { margin: 12px 4px 2px; color: var(--accent); font-weight: 600; font-size: 12px; }
+.hub-btn { text-align: left; padding: 9px 12px; border: 1px solid var(--border); background: var(--panel2); border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+.hub-btn:hover { background: var(--hover); border-color: var(--accent); }
+.hub-btn.dim { background: transparent; color: var(--text-dim); }
+.hub-sp { flex: 1; }
+.hub-main { flex: 1; min-width: 0; overflow-y: auto; padding: 22px 28px; }
+.hub-main h2 { font-size: 15px; margin: 0 0 12px; }
+.hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px; margin-bottom: 26px; }
+.hub-card { text-align: left; padding: 0; border: 1px solid var(--border); background: var(--panel); border-radius: 10px; overflow: hidden; cursor: pointer; }
+.hub-card:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.hub-th { height: 110px; background: var(--input-bg) center / cover no-repeat; display: grid; place-items: center; font-size: 26px; font-weight: 700; color: var(--text-dim); }
+.hub-nm { padding: 8px 10px 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-sub { padding: 0 10px 9px; color: var(--text-dim); font-size: 11.5px; }
+.hub-lh { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+.hub-lh .tgl { margin-left: auto; height: 24px; padding: 0 9px; border: 1px solid var(--border); background: var(--input-bg); border-radius: 4px; cursor: pointer; }
+
+/* ---------- 3D 작업실 ---------- */
+#ws3d { flex: 1; min-width: 0; display: flex; background: var(--workspace); }
+#ws3d[hidden] { display: none; }
+.mode3d #statusbar { display: none; }
+.mode3d #toolbox, .mode3d #workspace, .mode3d #sidebar, .mode3d #optionsbar { display: none !important; }
+#tb3d { width: 84px; flex: none; background: var(--panel); border-right: 1px solid var(--border); padding: 6px; display: grid; grid-template-columns: repeat(2, 32px); gap: 4px; align-content: start; justify-content: center; }
+#tb3d .tool-btn { font-size: 15px; color: var(--text); }
+#mid3d { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#bar3d { display: flex; align-items: center; gap: 8px; padding: 4px 10px; min-height: 38px; background: var(--panel); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+#bar3d select { background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; height: 24px; }
+#bar3d .tgl { height: 24px; padding: 0 9px; border: 1px solid var(--border); background: var(--input-bg); border-radius: 4px; cursor: pointer; }
+#bar3d .tgl.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+#bar3d input[type=color], .props3d input[type=color] { width: 34px; height: 24px; padding: 0; border: 1px solid var(--border); background: transparent; border-radius: 4px; }
+#stage3d { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+#cv3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+#side3d { width: 284px; flex: none; background: var(--panel); border-left: 1px solid var(--border); overflow-y: auto; }
+.add3d { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.add3d button { padding: 5px 6px; border: 1px solid var(--border); background: var(--input-bg); border-radius: 5px; cursor: pointer; text-align: left; }
+.add3d button:hover { border-color: var(--accent); }
+.outliner { max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.ol-row { display: flex; align-items: center; gap: 6px; padding: 3px 5px; border-radius: 5px; cursor: default; border: 1px solid transparent; }
+.ol-row:hover { background: var(--hover); }
+.ol-row.active { background: var(--active); border-color: var(--accent); }
+.ol-row .lname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-row .ibtn { width: 22px; height: 22px; border: 0; background: transparent; cursor: pointer; padding: 0; color: var(--text-dim); display: grid; place-items: center; }
+.ol-row .ibtn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.props3d .frow { margin: 4px 0; }
+.props3d .frow > label { width: 60px; }
+.props3d input[type=text] { flex: 1; min-width: 0; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; height: 24px; padding: 0 6px; }
+.tf-grid { display: grid; grid-template-columns: 42px 1fr 1fr 1fr; gap: 4px; align-items: center; margin: 6px 0; }
+.tf-grid input { width: 100%; min-width: 0; height: 24px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+.mobile #ws3d { flex-direction: column; }
+.mobile #tb3d { order: 2; width: 100%; height: 56px; display: flex; flex-direction: row; overflow-x: auto; border-right: 0; border-top: 1px solid var(--border); gap: 6px; align-items: center; justify-content: flex-start; }
+.mobile #tb3d .tool-btn { width: 44px; height: 44px; flex: none; }
+.mobile #mid3d { order: 1; }
+.mobile #bar3d { flex-wrap: nowrap; overflow-x: auto; }
+.mobile #bar3d > * { flex: none; }
+.mobile #side3d { position: fixed; top: 72px; bottom: 56px; right: 0; width: min(88vw, 330px); z-index: 70; transform: translateX(105%); transition: transform 0.2s; box-shadow: var(--shadow); }
+.mobile #side3d.open { transform: none; }
+.mobile #tabbar { height: 38px; }
+.mobile #hub { flex-direction: column; }
+.mobile .hub-side { width: 100%; flex-direction: row; flex-wrap: wrap; flex: none; max-height: 45vh; }
+.mobile .hub-logo { width: 100%; }
+.mobile .hub-btn { font-size: 14px; }

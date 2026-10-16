@@ -3,7 +3,7 @@ const { app, BrowserWindow, ipcMain, dialog, clipboard, nativeImage, screen, Men
 const path = require('path');
 const fs = require('fs');
 
-const OPEN_EXTS = ['.paintplus', '.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif'];
+const OPEN_EXTS = ['.paintplus', '.pp3d', '.glb', '.gltf', '.obj', '.stl', '.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif'];
 const APP_TITLE = '그림판+';
 const HEADLESS = !!process.env.PP_HEADLESS; // 테스트 전용: 오프스크린(창 없음)
 
@@ -219,6 +219,22 @@ ipcMain.handle('dialog:save', async (_e, opts = {}) => {
     filters: opts.filters || [],
   });
   return r.canceled ? null : r.filePath;
+});
+ipcMain.handle('dialog:dir', async () => {
+  const r = await dialog.showOpenDialog(win, { title: '라이브러리 폴더 선택', properties: ['openDirectory'] });
+  return r.canceled ? null : r.filePaths[0];
+});
+ipcMain.handle('fs:listDir', (_e, dir) => {
+  const exts = ['.paintplus', '.pp3d', '.png', '.jpg', '.jpeg', '.webp', '.bmp', '.glb', '.gltf', '.obj', '.stl'];
+  const out = [];
+  for (const f of fs.readdirSync(dir)) {
+    const p = path.join(dir, f);
+    try {
+      const st = fs.statSync(p);
+      if (st.isFile() && exts.includes(path.extname(f).toLowerCase())) out.push({ name: f, path: p, mtime: st.mtimeMs, size: st.size });
+    } catch (_) { /* 접근 불가 */ }
+  }
+  return out.sort((a, b) => b.mtime - a.mtime);
 });
 ipcMain.handle('file:write', (_e, p, data) => {
   fs.writeFileSync(p, Buffer.from(data));

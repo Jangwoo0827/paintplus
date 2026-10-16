@@ -14,9 +14,12 @@
       for (const s of shortcut.split(' / ')) byShortcut[normalizeCombo(s)] = id;
     }
   };
+  // 3D 작업실이 활성일 때 실행을 허용하는 공용 명령
+  const ALLOW_IN_3D = /^(file\.(new|open|save|saveas|exit|import|new3d|import3d|export)|edit\.(undo|redo)|view\.(theme|fullscreen)|app\.|help\.|three\.)/;
   PP.runCmd = function (id) {
     const c = PP.cmds[id];
     if (!c) return;
+    if (PP.tabs && PP.tabs.is3d() && !ALLOW_IN_3D.test(id)) return;
     if (c.enabled && !c.enabled()) return;
     try {
       const r = c.run();
@@ -67,11 +70,12 @@
   if (window.api) D('file.exit', '끝내기', 'Ctrl+Q', () => PP.requestClose());
 
   D('edit.undo', '실행 취소', 'Ctrl+Z', () => {
+  if (PP.tabs.is3d()) { PP.three.undo(); return; }
   if (PP.pendingActive()) { PP.cancelPending(); return; }
   if (PP.sel.float) { PP.sel.cancelFloat(); return; }
   PP.history.undo();
-}, { enabled: () => PP.history.canUndo() || !!PP.sel.float || PP.pendingActive() });
-  D('edit.redo', '다시 실행', 'Ctrl+Y / Ctrl+Shift+Z', () => PP.history.redo(), { enabled: () => PP.history.canRedo() });
+}, { enabled: () => (PP.tabs.is3d() ? !!(PP.three.scene && PP.three.scene.canUndo()) : PP.history.canUndo() || !!PP.sel.float || PP.pendingActive()) });
+  D('edit.redo', '다시 실행', 'Ctrl+Y / Ctrl+Shift+Z', () => (PP.tabs.is3d() ? PP.three.redo() : PP.history.redo()), { enabled: () => (PP.tabs.is3d() ? !!(PP.three.scene && PP.three.scene.canRedo()) : PP.history.canRedo()) });
 
   D('view.zoomin', '확대', 'Ctrl+=', () => PP.vp.zoomStep(1));
   D('view.zoomout', '축소', 'Ctrl+-', () => PP.vp.zoomStep(-1));
@@ -125,6 +129,11 @@ D('view.fullscreen', '전체 화면', 'F11', () => { PP._fs = !PP._fs; window.ap
   document.addEventListener('keydown', (e) => {
     if (PP.ui.isModalOpen && PP.ui.isModalOpen()) return;
     if (isTyping(e.target)) return;
+    if (PP.hub && PP.hub.isOpen()) return;
+    if (PP.tabs.is3d() && !(e.ctrlKey || e.metaKey) || (PP.tabs.is3d() && (e.ctrlKey || e.metaKey) && ['z', 'y'].includes(e.key.toLowerCase()))) {
+      if (PP.three.keydown(e)) { e.preventDefault(); return; }
+    }
+    if (PP.tabs.is3d() && !(e.ctrlKey || e.metaKey) && !e.altKey && !/^F\d+$/.test(e.key)) return; // 2D 도구 단축키 차단
     if (e.key === 'Escape') {
       if (PP.menuOpen && PP.menuOpen()) return;
       if (PP.vp.isDrawing()) { PP.vp.cancelGesture(); return; }
