@@ -179,6 +179,28 @@
       this.f = out;
       return new Set([].concat(...[...cuts.values()]));
     }
+    /** (a,b) 모서리가 속한 에지 루프: 차수 4 인 정점에서 맞은편 모서리로 계속 이어간다. 모서리 키 배열 */
+    edgeLoop(a, b) {
+      const ef = this.edgeFaces();
+      const adj = new Map();
+      for (const k of ef.keys()) { const [x, y] = k.split(',').map(Number); (adj.get(x) || adj.set(x, []).get(x)).push(y); (adj.get(y) || adj.set(y, []).get(y)).push(x); }
+      const share = (u, v, w) => { const f1 = ef.get(ek(u, v)) || [], f2 = ef.get(ek(v, w)) || []; return f1.some((f) => f2.includes(f)); };
+      const out = new Set([ek(a, b)]);
+      for (const [from, to] of [[a, b], [b, a]]) {
+        let u = from, v = to;
+        for (let guard = 0; guard < 10000; guard++) {
+          const nb = adj.get(v) || [];
+          if (nb.length !== 4) break;
+          const w = nb.find((x) => x !== u && !share(u, v, x));
+          if (w === undefined) break;
+          const k = ek(v, w);
+          if (out.has(k)) break;
+          out.add(k);
+          u = v; v = w;
+        }
+      }
+      return [...out];
+    }
     /** 선택 정점을 중심점으로 병합. 반환: 병합된 정점의 (compact 후) 인덱스 */
     mergeVerts(selV) {
       const s = [...selV];

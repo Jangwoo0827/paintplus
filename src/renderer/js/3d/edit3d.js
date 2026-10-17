@@ -12,6 +12,7 @@
 
   const E = (T.edit = {
     on: false,
+    boxMode: false,
     mode: 'vert', // vert | edge | face
     sel: new Set(), // vert: 정점 번호, edge: 'a,b' 키, face: 면 번호
     p: { extrude: 0.3, inset: 0.25, bevel: 0.1, cuts: 1 }, // 연산 매개변수
@@ -254,11 +255,39 @@
   };
   hook.pick = function (e) {
     const r = T.gl.canvas.getBoundingClientRect();
+    if (e.altKey) { // Alt+클릭: 에지 루프 선택
+      const keep = E.mode;
+      E.mode = 'edge';
+      const k = E.pickAt(e.clientX - r.left, e.clientY - r.top);
+      E.mode = keep;
+      if (k == null) return;
+      const loop = item.em.edgeLoop(...k.split(',').map(Number));
+      const base = keep === 'edge' && e.shiftKey ? new Set(E.sel) : new Set();
+      for (const x of loop) base.add(x);
+      E.mode = 'edge';
+      E.sel = base;
+      refresh();
+      return;
+    }
     const k = E.pickAt(e.clientX - r.left, e.clientY - r.top);
     if (k == null) { if (!e.shiftKey) E.sel = new Set(); }
     else if (e.shiftKey) { if (E.sel.has(k)) E.sel.delete(k); else E.sel.add(k); }
     else E.sel = new Set([k]);
     refresh();
+  };
+  /** 화면 사각형(px, 캔버스 기준) 안의 요소를 선택. add: 기존 선택에 더하기 */
+  E.boxSelect = function (x0, y0, x1, y1, add) {
+    const em = item.em, lx = Math.min(x0, x1), hx = Math.max(x0, x1), ly = Math.min(y0, y1), hy = Math.max(y0, y1);
+    item.obj3d.updateMatrixWorld(true);
+    const inside = (p) => { const s = screenOf(p); return s[2] <= 1 && s[0] >= lx && s[0] <= hx && s[1] >= ly && s[1] <= hy; };
+    const vis = (p) => inside(p) && !occluded(p);
+    const found = new Set();
+    if (E.mode === 'vert') em.v.forEach((p, i) => { if (vis(p)) found.add(i); });
+    else if (E.mode === 'edge') { for (const k of em.edgeFaces().keys()) { const [a, b] = k.split(',').map(Number); if (vis(em.v[a]) && vis(em.v[b])) found.add(k); } }
+    else em.f.forEach((q, fi) => { if (vis(em.centroid(fi))) found.add(fi); });
+    E.sel = add ? new Set([...E.sel, ...found]) : found;
+    refresh();
+    return found.size;
   };
   E.selectAll = function () {
     const em = item.em;
@@ -489,7 +518,8 @@
     for (const [id, name] of Object.entries(MODE_NAMES)) ui.modeBtns[id] = PP.el('button', { class: 'tgl', text: name + ' (' + (['vert', 'edge', 'face'].indexOf(id) + 1) + ')', onclick: () => E.setMode(id) });
     modeRow.append(...Object.values(ui.modeBtns));
     const selRow = PP.el('div', { class: 'edit-row' });
-    selRow.append(PP.el('button', { class: 'tgl', text: '전체 (A)', onclick: () => E.selectAll() }), PP.el('button', { class: 'tgl', text: '해제', onclick: () => E.selectNone() }), PP.el('button', { class: 'tgl', text: '반전', onclick: () => E.invert() }));
+    selRow.append(PP.el('button', { class: 'tgl', text: '전체 (A)', onclick: () => E.selectAll() }), PP.el('button', { class: 'tgl', text: '해제', onclick: () => E.selectNone() }), PP.el('button', { class: 'tgl', text: '반전', onclick: () => E.invert() }),
+      (ui.boxBtn = PP.el('button', { class: 'tgl', text: '박스', title: '켜면 드래그로 사각형 선택 (끄면 Shift+드래그)', onclick: () => { E.boxMode = !E.boxMode; ui.boxBtn.classList.toggle('on', E.boxMode); } })));
     const par = (label, key, step, min) => {
       const i = PP.el('input', { type: 'number', step, min, value: E.p[key] });
       i.addEventListener('input', () => { if (i.value !== '') E.p[key] = +i.value; });
@@ -512,6 +542,32 @@
     panel.append(PP.el('header', { text: '편집 모드' }), body);
     T.el.side.insertBefore(panel, T.el.side.children[1] || null);
     ui.panel = panel;
+    // 박스 선택: Shift+드래그 (또는 패널의 “박스” 켜고 드래그). 드래그가 아니라 클릭이면 일반 선택
+    const stage = PP.$('#stage3d');
+    const rb = PP.el('div', { class: 'rubber' });
+    rb.hidden = true;
+    stage.append(rb);
+    stage.addEventListener('pointerdown', (e) => {
+      if (!E.on || e.button !== 0 || !(e.shiftKey || E.boxMode) || e.altKey || T.gl.tc.axis) return;
+      e.stopPropagation(); // 시점 회전(OrbitControls)으로 넘기지 않는다
+      const r = T.gl.canvas.getBoundingClientRect(), sx = e.clientX, sy = e.clientY, add = e.shiftKey;
+      let moved = false;
+      const mv = (ev) => {
+        if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+        moved = true;
+        rb.hidden = false;
+        Object.assign(rb.style, { left: Math.min(sx, ev.clientX) - r.left + 'px', top: Math.min(sy, ev.clientY) - r.top + 'px', width: Math.abs(ev.clientX - sx) + 'px', height: Math.abs(ev.clientY - sy) + 'px' });
+      };
+      const up = (ev) => {
+        window.removeEventListener('pointermove', mv);
+        window.removeEventListener('pointerup', up);
+        rb.hidden = true;
+        if (moved) E.boxSelect(sx - r.left, sy - r.top, ev.clientX - r.left, ev.clientY - r.top, add);
+        else hook.pick({ clientX: sx, clientY: sy, shiftKey: add, altKey: false });
+      };
+      window.addEventListener('pointermove', mv);
+      window.addEventListener('pointerup', up);
+    }, true);
     sync();
   });
 })(window.PP);

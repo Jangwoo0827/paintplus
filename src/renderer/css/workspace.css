@@ -108,3 +108,6 @@
 .mobile .hub-logo { width: 100%; }
 .mobile .hub-btn { font-size: 14px; }
 .props3d .frow.chk > label { width: auto; }
+
+.rubber { position: absolute; border: 1px dashed var(--accent); background: rgba(80, 150, 255, 0.15); pointer-events: none; z-index: 5; }
+.rubber[hidden] { display: none; }
